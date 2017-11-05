@@ -1,0 +1,18 @@
+language: generic
+sudo:     false
+
+matrix:
+  fast_finish: true
+
+os:
+  - linux
+
+branches:
+  except:
+    - /^docs\..*$/
+
+install:
+  - source manage.sh install
+
+script:
+  - bash manage.sh run_tests

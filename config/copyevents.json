@@ -1,0 +1,9 @@
+{
+    "file_in":"/home/jmbenlloch/next/daq/canfranc/time/run_3733.gdc2next.next-new.000.rd",
+    "file_out": "/home/jmbenlloch/next/rawdatainput/run_3733.gdc2next.rd",
+    "two_files": false,
+	"max_events": 2,
+	"skip": 0,
+	"copy_evts": true,
+	"verbosity" : 2
+}
