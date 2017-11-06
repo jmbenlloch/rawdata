@@ -77,6 +77,7 @@ function compile {
 }
 
 function compile_and_test {
+    set_env
     compile
 	run_tests
 }
@@ -95,6 +96,7 @@ case $COMMAND in
     make_environment)       make_environment ;;
     run_tests)              run_tests ;;
     compile_and_test)       compile_and_test ;;
+    env)                    set_env ;;
     clean)                  clean ;;
 
     *) echo Unrecognized command: ${COMMAND}
