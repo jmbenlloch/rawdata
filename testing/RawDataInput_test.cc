@@ -363,3 +363,102 @@ TEST_CASE("Test PMTs Channel Mask", "[pmt_chmask]") {
 		}
 	}
 }
+
+TEST_CASE("Test compute next FThm", "[compute_nextFThm]") {
+	next::RawDataInput rdata = next::RawDataInput();
+	spdlog::drop("eventreader");
+	next::EventReader* reader = new next::EventReader(0);
+
+	int samplesPerMus = 40;
+
+	SECTION("Test FTbit=0, FT > Pretrigger" ) {
+		int nextFT   = -1;
+		int nextFThm = -1;
+
+		int triggerFT = 700 * samplesPerMus;
+		int bufferSamples = 1300 * samplesPerMus;
+		int ftBit = 0;
+		int pretrigger = 650 * samplesPerMus;
+
+		reader->SetTriggerFT(triggerFT);
+		reader->SetBufferSamples(bufferSamples);
+		reader->SetFTBit(ftBit);
+		reader->SetPreTriggerSamples(pretrigger);
+
+		for (int i=0; i < bufferSamples; i++){
+			rdata.computeNextFThm(&nextFT, &nextFThm, reader);
+			REQUIRE(nextFT   == (triggerFT + i) % bufferSamples);
+			int ftm = (nextFT - pretrigger + bufferSamples) % bufferSamples;
+			REQUIRE(nextFThm == ftm);
+		}
+	}
+
+	SECTION("Test FTbit=0, FT < Pretrigger" ) {
+		int nextFT   = -1;
+		int nextFThm = -1;
+
+		int triggerFT = 400 * samplesPerMus;
+		int bufferSamples = 1300 * samplesPerMus;
+		int ftBit = 0;
+		int pretrigger = 650 * samplesPerMus;
+
+		reader->SetTriggerFT(triggerFT);
+		reader->SetBufferSamples(bufferSamples);
+		reader->SetFTBit(ftBit);
+		reader->SetPreTriggerSamples(pretrigger);
+
+		for (int i=0; i < bufferSamples; i++){
+			rdata.computeNextFThm(&nextFT, &nextFThm, reader);
+			// Due to implementation in FPGA, we have to substract 1
+			REQUIRE(nextFT   == (triggerFT + i -1) % bufferSamples);
+			int ftm = (nextFT - pretrigger + bufferSamples) % bufferSamples;
+			REQUIRE(nextFThm == ftm);
+		}
+	}
+
+	SECTION("Test FTbit=1, FT > Pretrigger" ) {
+		int nextFT   = -1;
+		int nextFThm = -1;
+
+		int triggerFT = 700 * samplesPerMus;
+		int bufferSamples = 3200 * samplesPerMus;
+		int ftBit = 1;
+		int pretrigger = 650 * samplesPerMus;
+
+		reader->SetTriggerFT(triggerFT);
+		reader->SetBufferSamples(bufferSamples);
+		reader->SetFTBit(ftBit);
+		reader->SetPreTriggerSamples(pretrigger);
+
+		for (int i=0; i < bufferSamples; i++){
+			rdata.computeNextFThm(&nextFT, &nextFThm, reader);
+			REQUIRE(nextFT   == ((ftBit << 16) + triggerFT + i) % bufferSamples);
+			int ftm = (nextFT - pretrigger + bufferSamples) % bufferSamples;
+			REQUIRE(nextFThm == ftm);
+		}
+
+	}
+
+	SECTION("Test FTbit=1, FT < Pretrigger" ) {
+		int nextFT   = -1;
+		int nextFThm = -1;
+
+		int triggerFT = 400 * samplesPerMus;
+		int bufferSamples = 3200 * samplesPerMus;
+		int ftBit = 1;
+		int pretrigger = 650 * samplesPerMus;
+
+		reader->SetTriggerFT(triggerFT);
+		reader->SetBufferSamples(bufferSamples);
+		reader->SetFTBit(ftBit);
+		reader->SetPreTriggerSamples(pretrigger);
+
+		for (int i=0; i < bufferSamples; i++){
+			rdata.computeNextFThm(&nextFT, &nextFThm, reader);
+			REQUIRE(nextFT   == ((ftBit << 16) + triggerFT + i) % bufferSamples);
+			int ftm = (nextFT - pretrigger + bufferSamples) % bufferSamples;
+			REQUIRE(nextFThm == ftm);
+		}
+
+	}
+}

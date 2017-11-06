@@ -55,6 +55,11 @@ namespace next {
     int TriggerCounter() const;
     int TriggerType() const;
 
+    void SetPreTriggerSamples(int PreTriggerSamples); //Needed for tests
+    void SetBufferSamples(int BufferSamples); //Needed for tests
+    void SetFTBit(int FTBit); //Needed for tests
+    void SetTriggerFT(int TriggerFT); //Needed for tests
+
   private:
     unsigned int fFWVersion;
     unsigned int fFecType;
@@ -107,6 +112,12 @@ namespace next {
   inline int EventReader::TriggerType() const {return fTriggerType;}
   inline void EventReader::SetChannelMask(int mask) {fChannelMask = mask;}
   inline void EventReader::SetDualModeBit(int dual) {fDualModeBit = dual;}
+
+  inline void EventReader::SetPreTriggerSamples(int PreTriggerSamples) {fPreTriggerSamples = PreTriggerSamples;}
+  inline void EventReader::SetBufferSamples(int BufferSamples) {fBufferSamples = BufferSamples;}
+  inline void EventReader::SetFTBit(int FTBit) {fFTBit = FTBit;}
+  inline void EventReader::SetTriggerFT(int TriggerFT) {fTriggerFT = TriggerFT;}
+
 }
 
 int CheckBit(int, int);
