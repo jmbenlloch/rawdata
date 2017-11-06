@@ -724,8 +724,10 @@ void next::RawDataInput::writePmtPedestals(next::EventReader * reader){
 int computePmtElecID(int fecid, int channel){
 	int ElecID;
 	if (fecid < 4){
+		//FECs 2-3
 		ElecID = (fecid-2)*8 + channel;
 	}else{
+		//FECs 10-11
 		ElecID = (fecid-8)*8 + channel;
 	}
 	return ElecID;

@@ -312,3 +312,54 @@ TEST_CASE("Decode SiPM charge", "[sipm_charge]") {
 		}
 	}
 }
+
+
+TEST_CASE("Test PMTs Channel Mask", "[pmt_chmask]") {
+	int16_t chmask;
+	std::vector<int> channelMaskVec;
+	std::vector<int> pmtFecs = {2,3,10,11};
+
+	//First dim: pmt, second dim: channel ids
+	const unsigned int nFecs = 4;
+	const unsigned int nChannelsPerFec = 8;
+	int correctChannels[nFecs][nChannelsPerFec];
+	for(unsigned int fec=0; fec < pmtFecs.size(); fec++){
+		for(unsigned int ch=0; ch < nChannelsPerFec; ch++){
+			correctChannels[fec][ch] = computePmtElecID(pmtFecs[fec], ch);
+		}
+	}
+
+	next::RawDataInput rdata = next::RawDataInput();
+
+	SECTION("Test all pmts in all FECs" ) {
+		for(unsigned int fec=0; fec < pmtFecs.size(); fec++){
+			chmask = 0x00FF;
+			rdata.pmtsChannelMask(chmask, channelMaskVec, pmtFecs[fec]);
+			//Check there are 8 channels and all have the proper ID & order
+			REQUIRE(channelMaskVec.size() == 8);
+			for(unsigned int ch=0; ch < nChannelsPerFec; ch++){
+				REQUIRE(channelMaskVec[ch] == correctChannels[fec][ch]);
+			}
+
+			//Clean data
+			channelMaskVec.clear();
+		}
+	}
+
+	SECTION("Test pmts one by one in all FECs" ) {
+		for(unsigned int fec=0; fec < pmtFecs.size(); fec++){
+			chmask = 0x0001; // now we only use 8 bits
+			for(unsigned int ch=0; ch < nChannelsPerFec; ch++){
+				rdata.pmtsChannelMask(chmask, channelMaskVec, pmtFecs[fec]);
+
+				// Test result
+				REQUIRE(channelMaskVec.size() == 1);
+				REQUIRE(channelMaskVec[0] == correctChannels[fec][ch]);
+
+				//Clean data
+				channelMaskVec.clear();
+				chmask = chmask << 1;
+			}
+		}
+	}
+}
