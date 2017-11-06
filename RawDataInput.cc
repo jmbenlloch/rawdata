@@ -273,7 +273,7 @@ bool next::RawDataInput::ReadDATEEvent()
 	// Reset the output pointers.
 	pmtDgts_.reset(new DigitCollection);
 	sipmDgts_.reset(new DigitCollection);
-	CreateSiPMs();
+	CreateSiPMs(&(*sipmDgts_), sipmPosition);
 //	(*sipmDgts_).reserve(1792); // 64 * numFEBs
 
 	if (!event_) return false;
@@ -1010,14 +1010,14 @@ void next::RawDataInput::decodeCharge(int16_t* &ptr, next::DigitCollection &digi
 	}
 }
 
-void next::RawDataInput::CreateSiPMs(){
+void CreateSiPMs(next::DigitCollection * sipms, int * positions){
 	///Creating one class Digit per each SiPM
 	int elecID;
-	(*sipmDgts_).reserve(1792);
+	sipms->reserve(1792);
 	for (int ch=0; ch<1792; ch++){
 		elecID = PositiontoSipmID(ch);
-		(*sipmDgts_).emplace_back(elecID, digitType::RAW, chanType::SIPM);
-		sipmPosition[ch] = (*sipmDgts_).size() - 1;
+		sipms->emplace_back(elecID, next::digitType::RAW, next::chanType::SIPM);
+		positions[ch] = sipms->size() - 1;
 	}
 }
 

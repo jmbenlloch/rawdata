@@ -62,7 +62,6 @@ public:
 
   ///Fill PMT classes
   void CreatePMTs(int fecid, bool zs);
-  void CreateSiPMs();
   void writePmtPedestals(next::EventReader * reader);
   int setDualChannels(next::EventReader * reader);
   void computeNextFThm(int * nextFT, int * nextFThm, next::EventReader * reader);
@@ -149,5 +148,5 @@ private:
 void flipWords(unsigned int size, int16_t* in, int16_t* out);
 int computePmtElecID(int fecid, int channel);
 void buildSipmData(unsigned int size, int16_t* ptr, int16_t * ptrA, int16_t * ptrB);
-/// DATE stuff: check if event of desired type.
 bool isEventSelected(eventHeaderStruct& event);
+void CreateSiPMs(next::DigitCollection * sipms, int * positions);

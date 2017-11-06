@@ -462,3 +462,19 @@ TEST_CASE("Test compute next FThm", "[compute_nextFThm]") {
 
 	}
 }
+
+TEST_CASE("Test create SiPMs", "[create_sipms]") {
+	next::DigitCollection sipms;
+	const unsigned int nsipms = 1792;
+	int sipmPositions[nsipms];
+
+	CreateSiPMs(&sipms, sipmPositions);
+
+	for(unsigned int ch=0; ch<nsipms; ch++){
+		REQUIRE(sipms[ch].digType() == next::digitType::RAW);
+		REQUIRE(sipms[ch].chType()  == next::chanType::SIPM);
+		REQUIRE(sipms[ch].chID()    == PositiontoSipmID(ch));
+		REQUIRE(sipmPositions[ch]   == ch);
+	}
+
+}
