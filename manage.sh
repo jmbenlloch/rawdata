@@ -67,6 +67,7 @@ function set_env {
 }
 
 function run_tests {
+    set_env
 	./tests && pytest -v testing
 }
 

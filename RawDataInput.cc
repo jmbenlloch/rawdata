@@ -206,8 +206,6 @@ bool next::RawDataInput::readNext()
 				}
 				bool result =  ReadDATEEvent();
 				if (result){
-					//TODO Study where to put this function (it clears digits without waveform)
-					setClockWidths();
 					writeEvent();
 				}
 				free(buffer_);
@@ -219,36 +217,6 @@ bool next::RawDataInput::readNext()
 	}
 
 	return eventNo_ < entriesThisFile_;
-}
-
-void next::RawDataInput::setClockWidths()
-{
-	// Sets the clockTickWidth member of each digit and removes any
-	// empty digits while it's at it.
-	/// PMTs.
-	if (pmtDgts_->size() >0){
-		auto erIt = pmtDgts_->begin();
-		double pmTickWidth = 0.;
-		while ( erIt != pmtDgts_->end() ){
-			if ( pmTickWidth == 0. )
-				pmTickWidth = (*erIt).TDC(1) - (*erIt).TDC(0);
-			(*erIt).setClockTickWidth( pmTickWidth );
-			++erIt;
-		}
-	}
-
-	/// SiPMs.
-	if ( sipmDgts_->size() > 0 ){
-		auto erIt = sipmDgts_->begin();
-		double siTickWidth = 0.;
-		while ( erIt != sipmDgts_->end() ){
-			if ( siTickWidth == 0. )
-				//siTickWidth = (*erIt).TDC(1) - (*erIt).TDC(0);
-				siTickWidth = 1;
-			(*erIt).setClockTickWidth( siTickWidth );
-			++erIt;
-		}
-	}
 }
 
 bool isEventSelected(eventHeaderStruct& event){

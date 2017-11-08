@@ -78,10 +78,6 @@ private:
   /// tdc.
   static double const CLOCK_TICK_;
 
-  /// Set the clockTickWidths.
-  void setClockWidths();
-  ///
-
   /// Retrieve DATE event header size stored in the raw data.
   /// 80 bytes for the newer DAQ (DATE event header format 3.14)
   unsigned int readHeaderSize(std::FILE* fptr) const;

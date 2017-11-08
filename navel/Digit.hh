@@ -50,18 +50,11 @@ namespace next
 			float pedestal() const;
 			void setPedestal(float ped);
 
-			// Width of time samples in waveform.
-			float clockTickWidth() const;
-			void setClockTickWidth(float tickwidth);
-
 			// Number of samples in Digit.
 			unsigned int nSample() const;
 
 			// Access to waveform.
 			void newSample_end(float tdc, float Q); ///< Add new sample at end of waveform.
-
-			// Value access.
-			float TDC(unsigned int i) const;
 
 			bool isSaturated() const;
 			void setSaturated(bool);
@@ -112,9 +105,6 @@ namespace next
 	inline void Digit::setPedestal(float ped) { pedestal_ = ped; }
 
 	inline unsigned int Digit::nSample() const { return waveform_.size(); }
-
-	inline float Digit::clockTickWidth() const { return clockTickWidth_; }
-	inline void Digit::setClockTickWidth(float tickwidth) { clockTickWidth_ = tickwidth; }
 
 	inline bool Digit::isSaturated() const { return saturated_; }
 	inline void Digit::setSaturated(bool sat) { saturated_ = sat; }
