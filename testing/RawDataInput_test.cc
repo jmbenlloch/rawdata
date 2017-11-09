@@ -166,8 +166,8 @@ TEST_CASE("Selected event", "[selected_event]") {
 	}
 }
 
-//TODO: test with 64 sensors one by one
-TEST_CASE("Decode SiPM charge", "[sipm_charge]") {
+//TODO test pointer position
+TEST_CASE("Decode charge", "[decode_charge]") {
 	//Max sensors: 64
 	//max words: 48 (64*12/16)
 	//fill the end with 111...11
@@ -477,4 +477,156 @@ TEST_CASE("Test create SiPMs", "[create_sipms]") {
 		REQUIRE(sipmPositions[ch]   == ch);
 	}
 
+}
+
+
+//TODO check one by one
+TEST_CASE("Decode PMT ZS charge", "[pmtzs_charge]") {
+	//Max sensors: 8
+	//max words: 7 ((8*12 + 12) / 16)
+	//fill the end with 111...11
+
+	// Test all sensors from 1 to 8, reading 0xFFF
+	// Set initial data to zero
+	const unsigned int max_sensors = 8;
+	const unsigned int charge_size = 12;
+	const unsigned int word_size = 16;
+	const unsigned int max_words = 7;
+
+	unsigned short data[max_words];
+	memset(data, 0, sizeof(int16_t) * max_words);
+
+	next::RawDataInput rdata = next::RawDataInput();
+
+	//Create DigitCollection, create Digits and positions vectors
+	next::DigitCollection digits;
+	int positions[max_sensors];
+	std::vector<int> channelMaskVec;
+
+
+	int chmsk = 0x000;
+	for(unsigned int nsensors=1; nsensors<=max_sensors; nsensors++){
+		// Round up x/y: (x + y - 1) / y;
+		unsigned int nwords    = (12 + nsensors*charge_size + word_size - 1) / word_size;
+		unsigned int nbits     = 12 + nsensors*charge_size;
+		unsigned int remaining = nwords*word_size - nbits;
+		printf("sensors: %d -> words: %d\n", nsensors, nwords);
+
+		chmsk = chmsk + (1 << (nsensors - 1));
+		printf("chmask: 0x%04x\n", chmsk);
+
+		//First word includes channel mask
+		data[0] = (chmsk << 4) + 0x0F;
+
+		for(unsigned int i=1; i<nwords; i++){
+			data[i] = 0x0FFFF;
+		}
+
+		printf("nbits: 0x%04x, remain: %d\n", chmsk, nwords*word_size - nbits);
+
+		//Set to zero the extra bits
+		for(unsigned int i=0; i<remaining; i++){
+			data[nwords-1] = (data[nwords-1] << 1) & 0x0FFFF;
+		}
+
+		data[nwords] = 0x1234;
+
+		for(unsigned int i=0; i<=nwords; i++){
+			printf("data[%d]: 0x%04x\n", i, data[i]);
+		}
+
+		//Create digits
+		for(unsigned s=0; s<nsensors; s++){
+			digits.emplace_back(s, next::digitType::RAW, next::chanType::PMT);
+			positions[s] = s;
+			channelMaskVec.push_back(s);
+		}
+
+		//Decode
+		int16_t * ptr     = (int16_t*) data;
+		int16_t * ptr_end = (int16_t*) data;
+		ptr_end += nwords;
+		int time = 0;
+		rdata.decodeChargePmtZS(ptr, digits, channelMaskVec, positions, time);
+		printf("ptrend: 0x%04x\n", *ptr);
+
+		//Check the pointer advanced nwords
+		REQUIRE(ptr == ptr_end);
+
+		//Check there is one charge in each Digit and it's value is 0xFFF
+		for(unsigned s=0; s<nsensors; s++){
+			//			printf("s: %d\n", s);
+			REQUIRE(digits[s].waveform().size() == 1);
+			REQUIRE(digits[s].waveform()[0] == 0xFFF);
+		}
+
+
+		// Clean up
+		memset(data, 0, sizeof(int16_t) * max_words);
+		digits.clear();
+		channelMaskVec.clear();
+	}
+
+	///////////////////////
+	// 1 -> 2
+	// 2 -> 3
+	// 3 -> 3
+	// 4 -> 4
+	// 5 -> 5
+	// 6 -> 6
+	// 7 -> 6
+	// 8 -> 7
+	///////////////////
+
+	//1 sensor
+	// 080F
+	// FF00
+
+	//2 sensors
+	// 0C0F
+	// FFFF
+	// F000
+
+	//3 sensors
+	// 0E0F
+	// FFFF
+	// FFFF
+
+	//4 sensors
+	// 0F0F
+	// FFFF
+	// FFFF
+	// FFF0
+
+	//5 sensors
+	// 0F8F
+	// FFFF
+	// FFFF
+	// FFFF
+	// FF00
+
+	//6 sensors
+	// 0FCF
+	// FFFF
+	// FFFF
+	// FFFF
+	// FFFF
+	// F000
+
+	//7 sensors
+	// 0FEF
+	// FFFF
+	// FFFF
+	// FFFF
+	// FFFF
+	// FFFF
+
+	//8 sensors
+	// 0FFF
+	// FFFF
+	// FFFF
+	// FFFF
+	// FFFF
+	// FFFF
+	// FFF0
 }

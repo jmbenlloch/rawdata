@@ -206,7 +206,7 @@ bool next::RawDataInput::readNext()
 				}
 				bool result =  ReadDATEEvent();
 				if (result){
-					writeEvent();
+					//writeEvent();
 				}
 				free(buffer_);
 				return result;
@@ -351,6 +351,9 @@ bool next::RawDataInput::ReadDATEEvent()
 		int16_t * payload_flip_free = payload_flip;
 		flipWords(size, buffer_cp, payload_flip);
 
+		for(int i=0; i<100; i++){
+			printf("payload[%d] = 0x%04x\n", i, payload_flip[i]);
+		}
 		eventReader_->ReadHotelCommonHeader(payload_flip);
 		int FWVersion = eventReader_->FWVersion();
 		int FECtype = eventReader_->FecType();
@@ -589,57 +592,56 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 	//stop condition...
 	while (true){
 		int FT = *buffer & 0x0FFFF;
-
-		//If not ZS check next FT value, if not expected (0xffff) end of data
-		if(!ZeroSuppression){
-			computeNextFThm(&nextFT, &nextFThm, eventReader_);
-			if(FT != (nextFThm & 0x0FFFF)){
-				if( verbosity_ >= 2 ){
-					_log->debug("nextFThm != FT: 0x{:04x}, 0x{:04x}", (nextFThm&0x0ffff), FT);
-				}
-				break;
-			}
-		}
+		printf("FT: 0x%04x\n", FT);
 
 		timeinmus = timeinmus + CLOCK_TICK_;
 		buffer++;
 
 		//TODO ZS
 		if(ZeroSuppression){
-			/*TotalNumberOfPMTs = 0;
-
-			  pay_temp =( *payload_ptr+0x10000) & 0x0FFFF;
-
-			//If 0xffff -> end of data. There has to be X000 at the beginning.
-			if (pay_temp == 0x0FFFF){
-			break;
+			for(int i=0; i<6; i++){
+				printf("buffer[%d] = 0x%04x\n", i, buffer[i]);
 			}
 
-			payload_ptr++;
-			pay_word++;
+			//stop condition
+			printf("nextword = 0x%04x\n", *buffer);
+			if(FT == 0x0FFFF){
+				break;
+			}
 
-			int ftHighBit = 0;
-			ftHighBit = (pay_temp & 0x8000)>>15;
-			ChannelMask = (pay_temp & 0x0FF0)>>4;
+			// Read new FThm bit and channel mask
+			int ftHighBit = (*buffer & 0x8000) >> 15;
+			ChannelMask = (*buffer & 0x0FF0) >> 4;
+			printf("fthbit: %d, chmask: %d\n", ftHighBit, ChannelMask);
+			pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId);
 
-			FT = FT + ftHighBit*fMaxSample -fFirstFT;
+			for(int i=0; i<fec_chmask[fFecId].size(); i++){
+				printf("pmt channel: %d\n", fec_chmask[fFecId][i]);
+			}
+
+			FT = FT + ftHighBit*fMaxSample - fFirstFT;
 			if ( FT < 0 ){
-			FT += BufferSamples;
+				FT += BufferSamples;
 			}
 
 			timeinmus = FT * CLOCK_TICK_;
 
-			if( verbosity_ >= 2 ){
-			_log->debug("First FT is {}", fFirstFT);
-			_log->debug("Time is {}", timeinmus);
-			_log->debug("ftHighBit is {}", ftHighBit);
-			_log->debug("Channel mask is 0x{:04x}", ChannelMask);
-			}
+			printf("timeinmus: %lf\n", timeinmus);
+			printf("FT: %d\n", FT);
 
-			for (int j=0;j<8;j++){
-			TotalNumberOfPMTs += CheckBit(ChannelMask,j);
-			}*/
+			decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, timeinmus);
+
 		}else{
+			//If not ZS check next FT value, if not expected (0xffff) end of data
+			if(!ZeroSuppression){
+				computeNextFThm(&nextFT, &nextFThm, eventReader_);
+				if(FT != (nextFThm & 0x0FFFF)){
+					if( verbosity_ >= 2 ){
+						_log->debug("nextFThm != FT: 0x{:04x}, 0x{:04x}", (nextFThm&0x0ffff), FT);
+					}
+					break;
+				}
+			}
 			decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, timeinmus);
 		}
 	}
@@ -976,6 +978,59 @@ void next::RawDataInput::decodeCharge(int16_t* &ptr, next::DigitCollection &digi
 			ptr++;
 		}
 	}
+}
+
+void next::RawDataInput::decodeChargePmtZS(int16_t* &ptr, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int* positions, double time){
+	//Raw Mode
+	int Charge = 0;
+	int16_t * payloadCharge_ptr = ptr;
+
+	//We have 64 SiPM per FEB
+	for(int chan=0; chan<channelMaskVec.size(); chan++){
+		// It is important to keep datatypes, memory allocation changes with them
+		int16_t * charge_ptr = (int16_t *) &Charge;
+
+		memcpy(charge_ptr+1, payloadCharge_ptr, 2);
+		memcpy(charge_ptr, payloadCharge_ptr+1, 2);
+
+		//There are 8 channels but only 4 cases
+		switch(chan % 4){
+			case 0:
+				Charge = Charge >> 8;
+				Charge = Charge & 0x0fff;
+				break;
+			case 1:
+				Charge = Charge >> 12;
+				Charge = Charge & 0x0fff;
+				break;
+			case 2:
+				Charge = Charge & 0x0fff;
+				break;
+			case 3:
+				Charge = Charge >> 4;
+				Charge = Charge & 0x0fff;
+				break;
+		}
+		if(chan != 1 && chan != 5){
+			payloadCharge_ptr+=1;
+		}
+
+		// Channel 3 and 7 do not add new words
+		if(chan != 2 && chan != 6){
+			ptr++;
+		}
+
+		//_log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, Charge);
+		printf("ElecID is %d\t Time is %lf\t Charge is 0x%04x\n", channelMaskVec[chan], time, Charge);
+		if(verbosity_ >= 4){
+			_log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, Charge);
+		}
+
+		//Save data in Digits
+		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
+		dgt->newSample_end(time, Charge);
+	}
+	ptr++;
 }
 
 void CreateSiPMs(next::DigitCollection * sipms, int * positions){
