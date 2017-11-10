@@ -12,7 +12,6 @@ next::Digit::Digit() :
 	pedestal_(0.),
 	saturated_(false),
 	febFailureBit_(false),
-	waveform_()
 {
 }
 
@@ -23,12 +22,5 @@ next::Digit::Digit(unsigned int chID, digitType dtype, chanType chtype) :
 	pedestal_(0.),
 	saturated_(false),
 	febFailureBit_(false),
-	waveform_()
 {
-}
-
-void next::Digit::newSample_end(float tdc, float Q)
-{
-	//Will need some protection for if key exists
-	waveform_.emplace_hint( this->waveform_.end(), tdc, Q );
 }

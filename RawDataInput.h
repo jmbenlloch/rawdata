@@ -61,12 +61,11 @@ public:
   void SetTriggerType(int16_t Trigger);
 
   ///Fill PMT classes
-  void CreatePMTs(int fecid, bool zs);
   void writePmtPedestals(next::EventReader * reader);
   int setDualChannels(next::EventReader * reader);
   void computeNextFThm(int * nextFT, int * nextFThm, next::EventReader * reader);
 
-  void decodeCharge(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, double timeinmus);
+  void decodeChargeRefactor(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int time);
   void decodeChargePmtZS(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, double timeinmus);
   int computeSipmTime(int16_t * &ptr, next::EventReader * reader);
   int sipmChannelMask(int16_t * &ptr, std::vector<int> &channelMaskVec, int febId);
@@ -147,3 +146,7 @@ int computePmtElecID(int fecid, int channel);
 void buildSipmData(unsigned int size, int16_t* ptr, int16_t * ptrA, int16_t * ptrB);
 bool isEventSelected(eventHeaderStruct& event);
 void CreateSiPMs(next::DigitCollection * sipms, int * positions);
+void CreatePMTs(next::DigitCollection * pmts, int * positions, int fecid, bool zs);
+void freeWaveformMemory(next::DigitCollection * sensors);
+
+void createWaveforms(next::DigitCollection * sensors, int bufferSamples);

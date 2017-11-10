@@ -560,73 +560,65 @@ TEST_CASE("Decode PMT ZS charge", "[pmtzs_charge]") {
 			REQUIRE(digits[s].waveform()[0] == 0xFFF);
 		}
 
-
 		// Clean up
 		memset(data, 0, sizeof(int16_t) * max_words);
 		digits.clear();
 		channelMaskVec.clear();
 	}
+}
 
-	///////////////////////
-	// 1 -> 2
-	// 2 -> 3
-	// 3 -> 3
-	// 4 -> 4
-	// 5 -> 5
-	// 6 -> 6
-	// 7 -> 6
-	// 8 -> 7
-	///////////////////
+/*
+TEST_CASE("Decode fill zeros", "[fill_zeros]") {
+	//Create digits
+	next::DigitCollection digits;
 
-	//1 sensor
-	// 080F
-	// FF00
+	SECTION("Test PMTs" ) {
+		digits.emplace_back(0, next::digitType::RAW, next::chanType::PMT);
+		digits[0].newSample_end(425.025, 0x0FF);
+		digits[0].newSample_end(425.05,  0x0FF);
+		digits[0].newSample_end(923.0,   0x0FF);
 
-	//2 sensors
-	// 0C0F
-	// FFFF
-	// F000
+		digits.emplace_back(1, next::digitType::RAW, next::chanType::PMT);
+		digits[1].newSample_end(425.025, 0x0FF);
+		digits[1].newSample_end(425.05,  0x0FF);
+		digits[1].newSample_end(923.0,   0x0FF);
 
-	//3 sensors
-	// 0E0F
-	// FFFF
-	// FFFF
 
-	//4 sensors
-	// 0F0F
-	// FFFF
-	// FFFF
-	// FFF0
+		const unsigned int bufferSize = 52000;
+		double clockTick = 0.025;
+		fillZeros(&digits, bufferSize, clockTick);
 
-	//5 sensors
-	// 0F8F
-	// FFFF
-	// FFFF
-	// FFFF
-	// FF00
+		for(unsigned int i=0; i<digits.size(); i++){
+			REQUIRE(digits[i].waveform().size() == bufferSize);
 
-	//6 sensors
-	// 0FCF
-	// FFFF
-	// FFFF
-	// FFFF
-	// FFFF
-	// F000
+			double time = 0.;
+			for(unsigned int j=0; j<bufferSize; j++){
+				REQUIRE(digits[i].waveform()[time] == 0);
+				time += clockTick;
+			}
+		}
+	}
+}*/
 
-	//7 sensors
-	// 0FEF
-	// FFFF
-	// FFFF
-	// FFFF
-	// FFFF
-	// FFFF
 
-	//8 sensors
-	// 0FFF
-	// FFFF
-	// FFFF
-	// FFFF
-	// FFFF
-	// FFFF
-	// FFF0
+TEST_CASE("Test create PMTs", "[create_pmts]") {
+	next::DigitCollection pmts;
+	const unsigned int npmts = 8;
+	int bufferSamples = 52000;
+	int pmtPositions[npmts];
+	int fec = 2;
+
+	CreatePMTs(&pmts, pmtPositions, fec, false, bufferSamples);
+
+	for(unsigned int ch=0; ch<npmts; ch++){
+		REQUIRE(pmts[ch].digType() == next::digitType::RAW);
+		REQUIRE(pmts[ch].chType()  == next::chanType::PMT);
+		REQUIRE(pmts[ch].chID()    == computePmtElecID(fec, ch));
+		REQUIRE(pmtPositions[ch]   == ch);
+
+		//Check waveforms are initialized to zero
+		for(unsigned int samp=0; samp<bufferSamples; samp++){
+			REQUIRE(pmts[ch].waveformNew()[samp] == 0);
+		}
+	}
 }

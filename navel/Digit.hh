@@ -1,8 +1,6 @@
 #ifndef navel_Products_Digit_hh
 #define navel_Products_Digit_hh
 
-#include "navel/pairUtilities.hh"
-
 #include <map>
 #include <vector>
 
@@ -51,10 +49,8 @@ namespace next
 			void setPedestal(float ped);
 
 			// Number of samples in Digit.
-			unsigned int nSample() const;
-
-			// Access to waveform.
-			void newSample_end(float tdc, float Q); ///< Add new sample at end of waveform.
+			unsigned int nSample();
+			void setnSample(int samples);
 
 			bool isSaturated() const;
 			void setSaturated(bool);
@@ -63,7 +59,8 @@ namespace next
 			bool isFEBFailureBit() const;
 			void setFEBFailureBit(bool s);
 
-			std::map<float,float,util::key_f_comp> waveform();
+			unsigned short int * waveformNew();
+			void setWaveformNew(unsigned short int * waveform);
 
 		private:
 
@@ -77,14 +74,13 @@ namespace next
 
 			bool saturated_;         ///< Saturation flag.
 
+			int bufferSize_;
+
 			bool febFailureBit_; ///< Value of error bit for SiPM FEBs.
 
 			//    unsigned int resamplingFactor_; ///< Resampling from raw (necessary?)
 
-		protected:
-
-			std::map<float,float,util::key_f_comp> waveform_; ///< The charge distribution of the digit.
-
+			unsigned short int * waveformNew_; ///< The charge distribution of the digit.
 
 	}; //class Digit
 
@@ -104,7 +100,8 @@ namespace next
 	inline float Digit::pedestal() const { return pedestal_; }
 	inline void Digit::setPedestal(float ped) { pedestal_ = ped; }
 
-	inline unsigned int Digit::nSample() const { return waveform_.size(); }
+	inline unsigned int Digit::nSample() { return bufferSize_; }
+	inline void Digit::setnSample(int samples) { bufferSize_ = samples; }
 
 	inline bool Digit::isSaturated() const { return saturated_; }
 	inline void Digit::setSaturated(bool sat) { saturated_ = sat; }
@@ -112,7 +109,8 @@ namespace next
 	inline bool Digit::isFEBFailureBit() const { return febFailureBit_; }
 	inline void Digit::setFEBFailureBit(bool s) { febFailureBit_ = s; }
 
-	inline std::map<float,float,util::key_f_comp> Digit::waveform() { return waveform_; }
+	inline unsigned short int * Digit::waveformNew() { return waveformNew_; }
+	inline void Digit::setWaveformNew(unsigned short int * waveform) { waveformNew_ = waveform; }
 
 } // namespace next
 
