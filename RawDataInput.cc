@@ -206,7 +206,7 @@ bool next::RawDataInput::readNext()
 				}
 				bool result =  ReadDATEEvent();
 				if (result){
-					//writeEvent();
+					writeEvent();
 					freeWaveformMemory(&*pmtDgts_);
 					freeWaveformMemory(&*sipmDgts_);
 				}
@@ -244,6 +244,7 @@ bool next::RawDataInput::ReadDATEEvent()
 	pmtDgts_.reset(new DigitCollection);
 	sipmDgts_.reset(new DigitCollection);
 	CreateSiPMs(&(*sipmDgts_), sipmPosition);
+	createWaveforms(&*sipmDgts_, 0, 3200); //sipms samples 40 slower than pmts
 //	(*sipmDgts_).reserve(1792); // 64 * numFEBs
 
 	if (!event_) return false;
@@ -366,7 +367,17 @@ bool next::RawDataInput::ReadDATEEvent()
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a PMT FEC");
 				}
+//				for(unsigned int i=0; i<pmtDgts_->size(); i++){
+//					if((*pmtDgts_)[i].active()){
+//						std::cout << (*pmtDgts_)[i].nSamples() << " before read pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
+//					}
+//				}
 				ReadHotelPmt(payload_flip,size);
+//				for(unsigned int i=0; i<pmtDgts_->size(); i++){
+//					if((*pmtDgts_)[i].active()){
+//						std::cout << (*pmtDgts_)[i].nSamples() << "after read pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
+//					}
+//				}
 			}else if (FECtype==2){
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a Trigger FEC");
@@ -553,10 +564,11 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 	int FTBit = eventReader_->GetFTBit();
 	int ErrorBit = eventReader_->GetErrorBit();
 
+	int nPmtsBefore = pmtDgts_->size();
 	CreatePMTs(&*pmtDgts_, pmtPosition, fFecId, ZeroSuppression);
-	createWaveforms(&*pmtDgts_, BufferSamples);
+	createWaveforms(&*pmtDgts_, nPmtsBefore, BufferSamples);
 
-	std::cout << "buffer samples: " << BufferSamples << std::endl;
+//	std::cout << "buffer samples: " << BufferSamples << std::endl;
 
 	if (ErrorBit){
 		auto myheader = (*headOut_).rbegin();
@@ -591,6 +603,7 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 	fec_chmask.emplace(fFecId, std::vector<int>());
 	int ChannelMask = eventReader_->ChannelMask();
 	pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId);
+	setActivePmts(&(fec_chmask[fFecId]), &*pmtDgts_, pmtPosition);
 
 
 	//TODO maybe size of payload could be used here to stop, but the size is
@@ -653,6 +666,12 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 			decodeChargeRefactor(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, time);
 		}
 	}
+
+//	for(unsigned int i=0; i<pmtDgts_->size(); i++){
+//		if((*pmtDgts_)[i].active()){
+//			std::cout << (*pmtDgts_)[i].nSamples() << " hotel pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
+//		}
+//	}
 }
 
 int next::RawDataInput::setDualChannels(next::EventReader * reader){
@@ -751,9 +770,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 	unsigned int numberOfFEB = eventReader_->NumberOfChannels();
 
 
-	int BufferSamples = eventReader_->BufferSamples();
-	createWaveforms(&*sipmDgts_, BufferSamples / 40); //sipms samples 40 slower than pmts
-	std::cout << "buffer samples: " << BufferSamples << std::endl;
+	//int BufferSamples = eventReader_->BufferSamples();
 
     double timeinmus = 0.;
 
@@ -846,6 +863,16 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 	}
 }
 
+
+void setActivePmts(std::vector<int> * channelMaskVec, next::DigitCollection * pmts, int * positions){
+	for(unsigned int i=0; i < channelMaskVec->size(); i++){
+//		std::cout << "mask: " << (*channelMaskVec)[i] << std::endl;
+		auto dgt = pmts->begin() + positions[(*channelMaskVec)[i]];
+		dgt->setActive(true);
+
+	}
+}
+
 int next::RawDataInput::pmtsChannelMask(int16_t chmask, std::vector<int> &channelMaskVec, int fecId){
 	int TotalNumberOfPMTs = 0;
 	int ElecID;
@@ -859,6 +886,10 @@ int next::RawDataInput::pmtsChannelMask(int16_t chmask, std::vector<int> &channe
 			TotalNumberOfPMTs++;
 		}
 	}
+
+//	for(unsigned int i=0; i<channelMaskVec.size(); i++){
+//		std::cout << "channel: " << channelMaskVec[i] << std::endl;
+//	}
 	//if(verbosity_>=2){
 	//	_log->debug("Channel mask is 0x{:04x}", temp);
 	//}
@@ -979,6 +1010,7 @@ void next::RawDataInput::decodeChargeRefactor(int16_t* &ptr, next::DigitCollecti
 			_log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, Charge);
 		}
 
+	//	printf("ElecID is %d\t Time is %d\t Charge is 0x%04x\n", channelMaskVec[chan], time, Charge);
 		//Save data in Digits
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
 		dgt->waveformNew()[time] = Charge;
@@ -992,7 +1024,7 @@ void next::RawDataInput::decodeChargeRefactor(int16_t* &ptr, next::DigitCollecti
 	}
 }
 
-void next::RawDataInput::decodeChargePmtZS(int16_t* &ptr, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int* positions, double time){
+void next::RawDataInput::decodeChargePmtZS(int16_t* &ptr, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int* positions, int time){
 	//Raw Mode
 	int Charge = 0;
 	int16_t * payloadCharge_ptr = ptr;
@@ -1039,7 +1071,7 @@ void next::RawDataInput::decodeChargePmtZS(int16_t* &ptr, next::DigitCollection 
 		//Save data in Digits
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
 		//TODO Fix
-//		dgt->newSample_end(time, Charge);
+		dgt->waveformNew()[time] = Charge;
 	}
 	ptr++;
 }
@@ -1055,13 +1087,15 @@ void CreateSiPMs(next::DigitCollection * sipms, int * positions){
 	}
 }
 
-void createWaveforms(next::DigitCollection * sensors, int bufferSamples){
-	for(unsigned int i=0; i< sensors->size(); i++){
-		std::cout << "id: " << (*sensors)[i].chID() << std::endl;
+void createWaveforms(next::DigitCollection * sensors, int startIndex, int bufferSamples){
+	for(unsigned int i=startIndex; i<sensors->size(); i++){
+//		std::cout << "id: " << (*sensors)[i].chID() << std::endl;
 		unsigned int size = bufferSamples * sizeof(unsigned short int);
-		auto * waveform = (unsigned short int*) malloc(size);
-		memset(waveform, 0, size);
+		unsigned short int * waveform = (unsigned short int*) malloc(size);
+		//TODO if ZS init to 0
+		//memset(waveform, 0, size);
 		(*sensors)[i].setWaveformNew(waveform);
+		(*sensors)[i].setnSamples(bufferSamples);
 	}
 }
 
@@ -1118,11 +1152,17 @@ void next::RawDataInput::writeEvent(){
 	blrs.reserve(32);
 	sipms.reserve(1792);
 
+	for(unsigned int i=0; i<pmtDgts_->size(); i++){
+		if((*pmtDgts_)[i].active()){
+		std::cout << "pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
+		}
+	}
+
 	auto erIt = pmtDgts_->begin();
 	while ( erIt != pmtDgts_->end() ){
 		int chid = (*erIt).chID();
 		bool delCh = false;
-		if (dualChannels[chid] && (*erIt).waveform().size() > 0){
+		if (dualChannels[chid] && (*erIt).active()){
 			//In the first fec
 			if(chid <=15){
 				// the upper channel is the BLR one
@@ -1147,7 +1187,7 @@ void next::RawDataInput::writeEvent(){
 			}
 		}else{
 			if (chid == externalTriggerCh_){
-				if( (*erIt).waveform().size() > 0){
+				if( (*erIt).active()){
 					extPmt.push_back(*erIt);
 				}
 			}
@@ -1161,13 +1201,20 @@ void next::RawDataInput::writeEvent(){
 	unsigned int event_number = date_header->NbInRun();
 	run_ = date_header->RunNb();
 
+	for(unsigned int i=0; i<pmts.size(); i++){
+		std::cout << "pmt " << pmts[i].chID() << "\t charge[0]: " << pmts[i].waveformNew()[0] << std::endl;
+	}
+
+	std::cout << "pmts: " << pmts.size() << std::endl;
+	std::cout << "blrs: " << blrs.size() << std::endl;
+	std::cout << "ext pmts: " << extPmt.size() << std::endl;
 	_writer->Write(pmts, blrs, extPmt, *sipmDgts_, eventTime_, event_number, run_);
 }
 
 void freeWaveformMemory(next::DigitCollection * sensors){
 	for(unsigned int i=0; i< sensors->size(); i++){
 		for(unsigned int j=0; j<1000; j++){
-			printf("s %d, charge[%d]: %d\n", (*sensors)[i].chID(), j, (*sensors)[i].waveformNew()[j]);
+	//		printf("s %d, charge[%d]: %d\n", (*sensors)[i].chID(), j, (*sensors)[i].waveformNew()[j]);
 		}
 		free((*sensors)[i].waveformNew());
 	}

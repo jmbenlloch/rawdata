@@ -7,7 +7,7 @@
 	"ext_trigger": 15,
 	"skip": 0,
 	"discard": false,
-	"verbosity" : 0,
+	"verbosity" : 1,
 	"host": "127.0.0.1",
 	"user" : "root",
 	"pass" : "root",

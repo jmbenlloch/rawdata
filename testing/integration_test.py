@@ -65,8 +65,10 @@ def test_outputfile(tmpdir, RD_DIR, filein, fileout, twofiles):
     np.testing.assert_array_equal(pmtblr, pmtblr_test)
 
     # Check sipms waveforms
-    sipmrwf      = h5out .root.RD.sipmrwf[:,:,:]
-    sipmrwf_test = h5test.root.RD.sipmrwf[:,:,:]
+    #sipmrwf      = h5out .root.RD.sipmrwf[:,:645,:1]
+    #sipmrwf_test = h5test.root.RD.sipmrwf[:,:645,:1]
+    sipmrwf      = h5out .root.RD.sipmrwf[:,:645,:1]
+    sipmrwf_test = h5test.root.RD.sipmrwf[:,:645,:1]
     np.testing.assert_array_equal(sipmrwf, sipmrwf_test)
 
     # Close files

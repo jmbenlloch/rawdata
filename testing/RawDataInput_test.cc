@@ -193,7 +193,7 @@ TEST_CASE("Decode charge", "[decode_charge]") {
 		for(unsigned int nsensors=1; nsensors<=max_sensors; nsensors++){
 			// Round up x/y: (x + y - 1) / y;
 			unsigned int nwords = (nsensors*charge_size + word_size - 1) / word_size;
-			//		printf("sensors: %d -> words: %d\n", nsensors, nwords);
+//			printf("sensors: %d -> words: %d\n", nsensors, nwords);
 
 			// Fill with 0xFFFF all the corresponding words
 			for(unsigned word=0; word<nwords; word++){
@@ -207,7 +207,7 @@ TEST_CASE("Decode charge", "[decode_charge]") {
 			for(unsigned int bit=0; bit<remain; bit++){
 				//data[nwords-1] = (data[nwords-1] & 0xFFFE) << 1;
 				data[nwords-1] = data[nwords-1] << 1;
-				//			printf("data[%d] = 0x%04x\n", nwords-1,data[nwords-1]);
+				//printf("data[%d] = 0x%04x\n", nwords-1,data[nwords-1]);
 			}
 
 			//Create digits
@@ -216,20 +216,21 @@ TEST_CASE("Decode charge", "[decode_charge]") {
 				positions[s] = s;
 				channelMaskVec.push_back(s);
 			}
+			createWaveforms(&digits, 1);
 
 			int16_t * ptr = (int16_t*) data;
 			int time = 0;
-			rdata.decodeCharge(ptr, digits, channelMaskVec, positions, time);
+			rdata.decodeChargeRefactor(ptr, digits, channelMaskVec, positions, time);
 
 			for(unsigned word=0; word<nwords; word++){
-				//			printf("data[%d] = 0x%04x\n", word, data[word]);
+//				printf("data[%d] = 0x%04x\n", word, data[word]);
 			}
 
 			//Check there is one charge in each Digit and it's value is 0xFFF
 			for(unsigned s=0; s<nsensors; s++){
-				//			printf("s: %d\n", s);
-				REQUIRE(digits[s].waveform().size() == 1);
-				REQUIRE(digits[s].waveform()[0] == 0xFFF);
+				printf("s: %d\n", s);
+				REQUIRE(digits[s].nSamples() == 1);
+				REQUIRE(digits[s].waveformNew()[0] == 0xFFF);
 			}
 
 			// Clean up
@@ -289,20 +290,21 @@ TEST_CASE("Decode charge", "[decode_charge]") {
 				positions[s] = s;
 				channelMaskVec.push_back(s);
 			}
+			createWaveforms(&digits, 1);
 
 			//Decode data
 			int16_t * ptr = (int16_t*) data;
 			int time = 0;
-			rdata.decodeCharge(ptr, digits, channelMaskVec, positions, time);
+			rdata.decodeChargeRefactor(ptr, digits, channelMaskVec, positions, time);
 
 			// Test result
 			REQUIRE(digits.size() == max_sensors);
 			for(unsigned s=0; s<max_sensors; s++){
 				REQUIRE(digits[s].chID() == s);
-				REQUIRE(digits[s].waveform().size() == 1);
+				REQUIRE(digits[s].nSamples() == 1);
 				//Only one sensor is 0xFFF, the rest of them are 0x000
 				int value = (s == sensor) ? 0xFFF : 0x000;
-				REQUIRE(digits[s].waveform()[0] == value);
+				REQUIRE(digits[s].waveformNew()[0] == value);
 			}
 
 			// Clean up
@@ -510,10 +512,10 @@ TEST_CASE("Decode PMT ZS charge", "[pmtzs_charge]") {
 		unsigned int nwords    = (12 + nsensors*charge_size + word_size - 1) / word_size;
 		unsigned int nbits     = 12 + nsensors*charge_size;
 		unsigned int remaining = nwords*word_size - nbits;
-		printf("sensors: %d -> words: %d\n", nsensors, nwords);
+//		printf("sensors: %d -> words: %d\n", nsensors, nwords);
 
 		chmsk = chmsk + (1 << (nsensors - 1));
-		printf("chmask: 0x%04x\n", chmsk);
+//		printf("chmask: 0x%04x\n", chmsk);
 
 		//First word includes channel mask
 		data[0] = (chmsk << 4) + 0x0F;
@@ -522,7 +524,7 @@ TEST_CASE("Decode PMT ZS charge", "[pmtzs_charge]") {
 			data[i] = 0x0FFFF;
 		}
 
-		printf("nbits: 0x%04x, remain: %d\n", chmsk, nwords*word_size - nbits);
+//		printf("nbits: 0x%04x, remain: %d\n", chmsk, nwords*word_size - nbits);
 
 		//Set to zero the extra bits
 		for(unsigned int i=0; i<remaining; i++){
@@ -531,9 +533,9 @@ TEST_CASE("Decode PMT ZS charge", "[pmtzs_charge]") {
 
 		data[nwords] = 0x1234;
 
-		for(unsigned int i=0; i<=nwords; i++){
-			printf("data[%d]: 0x%04x\n", i, data[i]);
-		}
+//		for(unsigned int i=0; i<=nwords; i++){
+//			printf("data[%d]: 0x%04x\n", i, data[i]);
+//		}
 
 		//Create digits
 		for(unsigned s=0; s<nsensors; s++){
@@ -541,6 +543,7 @@ TEST_CASE("Decode PMT ZS charge", "[pmtzs_charge]") {
 			positions[s] = s;
 			channelMaskVec.push_back(s);
 		}
+		createWaveforms(&digits, 1);
 
 		//Decode
 		int16_t * ptr     = (int16_t*) data;
@@ -548,7 +551,7 @@ TEST_CASE("Decode PMT ZS charge", "[pmtzs_charge]") {
 		ptr_end += nwords;
 		int time = 0;
 		rdata.decodeChargePmtZS(ptr, digits, channelMaskVec, positions, time);
-		printf("ptrend: 0x%04x\n", *ptr);
+//		printf("ptrend: 0x%04x\n", *ptr);
 
 		//Check the pointer advanced nwords
 		REQUIRE(ptr == ptr_end);
@@ -556,8 +559,8 @@ TEST_CASE("Decode PMT ZS charge", "[pmtzs_charge]") {
 		//Check there is one charge in each Digit and it's value is 0xFFF
 		for(unsigned s=0; s<nsensors; s++){
 			//			printf("s: %d\n", s);
-			REQUIRE(digits[s].waveform().size() == 1);
-			REQUIRE(digits[s].waveform()[0] == 0xFFF);
+			REQUIRE(digits[s].nSamples() == 1);
+			REQUIRE(digits[s].waveformNew()[0] == 0xFFF);
 		}
 
 		// Clean up
@@ -608,7 +611,7 @@ TEST_CASE("Test create PMTs", "[create_pmts]") {
 	int pmtPositions[npmts];
 	int fec = 2;
 
-	CreatePMTs(&pmts, pmtPositions, fec, false, bufferSamples);
+	CreatePMTs(&pmts, pmtPositions, fec, false);
 
 	for(unsigned int ch=0; ch<npmts; ch++){
 		REQUIRE(pmts[ch].digType() == next::digitType::RAW);
@@ -616,9 +619,9 @@ TEST_CASE("Test create PMTs", "[create_pmts]") {
 		REQUIRE(pmts[ch].chID()    == computePmtElecID(fec, ch));
 		REQUIRE(pmtPositions[ch]   == ch);
 
-		//Check waveforms are initialized to zero
-		for(unsigned int samp=0; samp<bufferSamples; samp++){
-			REQUIRE(pmts[ch].waveformNew()[samp] == 0);
-		}
+//		//Check waveforms are initialized to zero
+//		for(unsigned int samp=0; samp<bufferSamples; samp++){
+//			REQUIRE(pmts[ch].waveformNew()[samp] == 0);
+//		}
 	}
 }

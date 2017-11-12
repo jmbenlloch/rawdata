@@ -73,14 +73,16 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	hsize_t extPmtDatasize = 0;
 
 	if (hasPmts){
-		pmtDatasize   = pmts[0].waveform().size();
+		pmtDatasize   = pmts[0].nSamples();
 	}
 	if (hasSipms){
-		sipmDatasize = sipms[0].waveform().size();
+		sipmDatasize = sipms[0].nSamples();
 	}
 	if(extPmt.size() > 0){
-		extPmtDatasize = extPmt[0].waveform().size();
+		extPmtDatasize = extPmt[0].nSamples();
 	}
+
+	std::cout << "pmt: " << pmtDatasize << ", sipms: " << sipmDatasize << ", extpmt: " << extPmtDatasize << std::endl;
 
 	if (_firstEvent){
 		//Load sensors data from DB
@@ -150,9 +152,9 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		short int *extPmtdata = new short int[extPmtDatasize];
 		int index = 0;
 		for(unsigned int sid=0; sid < extPmt.size(); sid++){
-			auto wf = extPmt[sid].waveform();
-			for(auto const &samp : wf) {
-				extPmtdata[index] = (short int) (samp.second);
+			auto wf = extPmt[sid].waveformNew();
+			for(unsigned int samp=0; samp<pmtDatasize; samp++) {
+				extPmtdata[index] = (short int) wf[samp];
 				index++;
 			}
 		}
@@ -198,9 +200,9 @@ void next::HDF5Writer::StorePmtWaveforms(std::vector<next::Digit*> sensors,
 	for(unsigned int sid=0; sid < sensors.size(); sid++){
 		if(sensors[sid]){
 			activeSensors++;
-			auto wf = sensors[sid]->waveform();
-			for(auto const &samp : wf) {
-				data[index] = (short int) (samp.second);
+			auto wf = sensors[sid]->waveformNew();
+			for(unsigned int samp=0; samp<sensors[sid]->nSamples(); samp++) {
+				data[index] = (short int) wf[samp];
 				index++;
 			}
 		}
@@ -225,9 +227,9 @@ void next::HDF5Writer::StoreSipmWaveforms(std::vector<next::Digit*> sensors,
 	for(unsigned int sid=0; sid < sensors.size(); sid++){
 		if(sensors[sid]){
 			activeSensors++;
-			auto wf = sensors[sid]->waveform();
-			for(auto const &samp : wf) {
-				data[index] = (short int) (samp.second);
+			auto wf = sensors[sid]->waveformNew();
+			for(unsigned int samp=0; samp<sensors[sid]->nSamples(); samp++) {
+				data[index] = (short int) wf[samp];
 				index++;
 			}
 		}else{

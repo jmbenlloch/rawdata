@@ -49,8 +49,8 @@ namespace next
 			void setPedestal(float ped);
 
 			// Number of samples in Digit.
-			unsigned int nSample();
-			void setnSample(int samples);
+			unsigned int nSamples();
+			void setnSamples(int samples);
 
 			bool isSaturated() const;
 			void setSaturated(bool);
@@ -58,6 +58,9 @@ namespace next
 			// Failure bit for SiPMs, from fmwk::DAQDigit
 			bool isFEBFailureBit() const;
 			void setFEBFailureBit(bool s);
+
+			bool active();
+			void setActive(bool active);
 
 			unsigned short int * waveformNew();
 			void setWaveformNew(unsigned short int * waveform);
@@ -82,6 +85,8 @@ namespace next
 
 			unsigned short int * waveformNew_; ///< The charge distribution of the digit.
 
+			bool active_;
+
 	}; //class Digit
 
 	typedef std::vector<Digit> DigitCollection;
@@ -100,8 +105,8 @@ namespace next
 	inline float Digit::pedestal() const { return pedestal_; }
 	inline void Digit::setPedestal(float ped) { pedestal_ = ped; }
 
-	inline unsigned int Digit::nSample() { return bufferSize_; }
-	inline void Digit::setnSample(int samples) { bufferSize_ = samples; }
+	inline unsigned int Digit::nSamples() { return bufferSize_; }
+	inline void Digit::setnSamples(int samples) { bufferSize_ = samples; }
 
 	inline bool Digit::isSaturated() const { return saturated_; }
 	inline void Digit::setSaturated(bool sat) { saturated_ = sat; }
@@ -111,6 +116,9 @@ namespace next
 
 	inline unsigned short int * Digit::waveformNew() { return waveformNew_; }
 	inline void Digit::setWaveformNew(unsigned short int * waveform) { waveformNew_ = waveform; }
+
+	inline bool Digit::active() {return active_;}
+	inline void Digit::setActive(bool active) {active_ = active; }
 
 } // namespace next
 
