@@ -63,6 +63,8 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	hsize_t nblr   = blrs.size();
 	hsize_t nsipm = sipms.size();
 
+	std::cout << "pmts" << npmt << std::endl;
+
 	bool hasPmts  = npmt > 0;
 	bool hasBlrs  = nblr > 0;
 	bool hasSipms = nsipm > 0;

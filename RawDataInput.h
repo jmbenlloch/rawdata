@@ -33,6 +33,7 @@
 
 #define NUM_FEC_SIPM 20
 #define PMTS_PER_FEC 8
+#define SIPMS_PER_FEB 64
 #define NUMBER_OF_FEBS 28
 
 namespace next {
@@ -61,11 +62,10 @@ public:
   void SetTriggerType(int16_t Trigger);
 
   ///Fill PMT classes
-  void writePmtPedestals(next::EventReader * reader);
   int setDualChannels(next::EventReader * reader);
   void computeNextFThm(int * nextFT, int * nextFThm, next::EventReader * reader);
 
-  void decodeChargeRefactor(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int time);
+  void decodeCharge(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int time);
   void decodeChargePmtZS(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
   int computeSipmTime(int16_t * &ptr, next::EventReader * reader);
   int sipmChannelMask(int16_t * &ptr, std::vector<int> &channelMaskVec, int febId);
@@ -146,9 +146,11 @@ int computePmtElecID(int fecid, int channel);
 void buildSipmData(unsigned int size, int16_t* ptr, int16_t * ptrA, int16_t * ptrB);
 bool isEventSelected(eventHeaderStruct& event);
 void CreateSiPMs(next::DigitCollection * sipms, int * positions);
-void CreatePMTs(next::DigitCollection * pmts, int * positions, int fecid, bool zs);
+void CreatePMTs(next::DigitCollection * pmts, int * positions, std::vector<int> * elecIDs, int bufferSize, bool zs);
 void freeWaveformMemory(next::DigitCollection * sensors);
 
-void createWaveforms(next::DigitCollection * sensors, int startIndex, int bufferSamples);
+void createWaveforms(next::DigitCollection * sensors, int bufferSamples);
 
 void setActivePmts(std::vector<int> * channelMaskVec, next::DigitCollection * pmts, int *positions);
+
+void writePmtPedestals(next::EventReader * reader, next::DigitCollection * pmts, std::vector<int> * elecIDs, int * positions);

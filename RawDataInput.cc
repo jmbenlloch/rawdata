@@ -243,9 +243,6 @@ bool next::RawDataInput::ReadDATEEvent()
 	// Reset the output pointers.
 	pmtDgts_.reset(new DigitCollection);
 	sipmDgts_.reset(new DigitCollection);
-	CreateSiPMs(&(*sipmDgts_), sipmPosition);
-	createWaveforms(&*sipmDgts_, 0, 3200); //sipms samples 40 slower than pmts
-//	(*sipmDgts_).reserve(1792); // 64 * numFEBs
 
 	if (!event_) return false;
 
@@ -564,12 +561,6 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 	int FTBit = eventReader_->GetFTBit();
 	int ErrorBit = eventReader_->GetErrorBit();
 
-	int nPmtsBefore = pmtDgts_->size();
-	CreatePMTs(&*pmtDgts_, pmtPosition, fFecId, ZeroSuppression);
-	createWaveforms(&*pmtDgts_, nPmtsBefore, BufferSamples);
-
-//	std::cout << "buffer samples: " << BufferSamples << std::endl;
-
 	if (ErrorBit){
 		auto myheader = (*headOut_).rbegin();
 		_log->warn("Event {} ErrorBit is {}, fec: {}", myheader->NbInRun(), ErrorBit, fFecId);
@@ -580,11 +571,6 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 
 	// Get here channel numbers & dualities
 	unsigned int TotalNumberOfPMTs = setDualChannels(eventReader_);
-
-	///Write pedestal
-	if(Baseline){
-		writePmtPedestals(eventReader_);
-	}
 
 	///Reading the payload
 	fFirstFT = TriggerFT;
@@ -603,8 +589,22 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 	fec_chmask.emplace(fFecId, std::vector<int>());
 	int ChannelMask = eventReader_->ChannelMask();
 	pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId);
+
+	//Create digits and waveforms for active channels
+	CreatePMTs(&*pmtDgts_, pmtPosition, &(fec_chmask[fFecId]), BufferSamples, ZeroSuppression);
 	setActivePmts(&(fec_chmask[fFecId]), &*pmtDgts_, pmtPosition);
 
+
+	for(unsigned int i=0; i<pmtDgts_->size(); i++){
+		int elecID = (*pmtDgts_)[i].chID();
+		int pos = pmtPosition[elecID];
+		printf("index: %d, elecID: %d, position: %d\n", i, elecID, pos);
+	}
+
+	///Write pedestal
+	if(Baseline){
+		writePmtPedestals(eventReader_, &*pmtDgts_, &(fec_chmask[fFecId]), pmtPosition);
+	}
 
 	//TODO maybe size of payload could be used here to stop, but the size is
 	//2x size per link and there are manu FFFF at the end, which are the actual
@@ -663,7 +663,7 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 				}
 			}
 			//decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, timeinmus);
-			decodeChargeRefactor(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, time);
+			decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, time);
 		}
 	}
 
@@ -709,11 +709,11 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 	return NumberOfPMTs;
 }
 
-void next::RawDataInput::writePmtPedestals(next::EventReader * reader){
+void writePmtPedestals(next::EventReader * reader, next::DigitCollection * pmts, std::vector<int> * elecIDs, int * positions){
 	int elecID;
-	for(int j=0; j<8; j++){
-		elecID = computePmtElecID(reader->FecId(), j);
-		auto dgt = (*pmtDgts_).begin() + pmtPosition[elecID];
+	for(int j=0; j<elecIDs->size(); j++){
+		elecID = (*elecIDs)[j];
+		auto dgt = pmts->begin() + positions[elecID];
 		dgt->setPedestal(reader->Pedestal(j));
 	}
 }
@@ -768,9 +768,18 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 	int FecId = eventReader_->FecId();
 	int ZeroSuppression = eventReader_->ZeroSuppression();
 	unsigned int numberOfFEB = eventReader_->NumberOfChannels();
+	int BufferSamples = eventReader_->BufferSamples();
 
+	int ChannelMask = eventReader_->ChannelMask();
+	std::cout << "fec: " << FecId << "\tsipm channel mask: " << ChannelMask << std::endl;
+	std::cout << "febs: " << numberOfFEB << std::endl;
 
-	//int BufferSamples = eventReader_->BufferSamples();
+	//Check if digits & waveforms has been created
+	if(sipmDgts_->size() == 0){
+		CreateSiPMs(&(*sipmDgts_), sipmPosition);
+		createWaveforms(&*sipmDgts_, BufferSamples/40); //sipms samples 40 slower than pmts
+	}
+
 
     double timeinmus = 0.;
 
@@ -840,6 +849,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 				}
 
 				int FEBId = ((*payload_ptr) & 0x0FC00) >> 10;
+				_log->debug("Feb ID is 0x{:04x}", FEBId);
 				payload_ptr++;
 				if(verbosity_ >= 3){
 					_log->debug("Feb ID is 0x{:04x}", FEBId);
@@ -854,7 +864,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 					sipmChannelMask(payload_ptr, feb_chmask[FEBId], FEBId);
 				}
 
-				decodeChargeRefactor(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
+				decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
 				//TODO check this time (originally was time for RAW and timeinmus for ZS)
 				//decodeSipmCharge(payload_ptr, channelMaskVec, TotalNumberOfSiPMs, FEBId, timeinmus);
 			}
@@ -969,7 +979,7 @@ void buildSipmData(unsigned int size, int16_t * ptr, int16_t * ptrA, int16_t * p
 	}
 }
 
-void next::RawDataInput::decodeChargeRefactor(int16_t* &ptr, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int* positions, int time){
+void next::RawDataInput::decodeCharge(int16_t* &ptr, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int* positions, int time){
 	//Raw Mode
 	int Charge = 0;
 	int16_t * payloadCharge_ptr = ptr;
@@ -1087,32 +1097,31 @@ void CreateSiPMs(next::DigitCollection * sipms, int * positions){
 	}
 }
 
-void createWaveforms(next::DigitCollection * sensors, int startIndex, int bufferSamples){
-	for(unsigned int i=startIndex; i<sensors->size(); i++){
-//		std::cout << "id: " << (*sensors)[i].chID() << std::endl;
-		unsigned int size = bufferSamples * sizeof(unsigned short int);
-		unsigned short int * waveform = (unsigned short int*) malloc(size);
-		//TODO if ZS init to 0
-		//memset(waveform, 0, size);
-		(*sensors)[i].setWaveformNew(waveform);
-		(*sensors)[i].setnSamples(bufferSamples);
+void createWaveform(next::Digit * sensor, int bufferSamples){
+	unsigned int size = bufferSamples * sizeof(unsigned short int);
+	unsigned short int * waveform = (unsigned short int*) malloc(size);
+	memset(waveform, 0, size);
+	sensor->setWaveformNew(waveform);
+	sensor->setnSamples(bufferSamples);
+}
+
+void createWaveforms(next::DigitCollection * sensors, int bufferSamples){
+	for(unsigned int i=0; i<sensors->size(); i++){
+		createWaveform(&((*sensors)[i]), bufferSamples);
 	}
 }
 
-void CreatePMTs(next::DigitCollection * pmts, int * positions, int fecid, bool zs){
-  ///Creating one class Digit per each PMT
-	int elecID;
-	pmts->reserve(PMTS_PER_FEC);
-	// Loop over the existing pmt channels
-	for (int j=0; j < PMTS_PER_FEC; j++){
-		// We are using links 2-3 and 8-9 for PMTs
-		elecID = computePmtElecID(fecid, j);
+void CreatePMTs(next::DigitCollection * pmts, int * positions, std::vector<int> * elecIDs, int bufferSamples, bool zs){
+	///Creating one class Digit per each MT
+	for (unsigned int i=0; i < elecIDs->size(); i++){
 		if (zs){
-			pmts->emplace_back(elecID, next::digitType::RAWZERO, next::chanType::PMT);
+			pmts->emplace_back((*elecIDs)[i], next::digitType::RAWZERO, next::chanType::PMT);
 		}else{
-			pmts->emplace_back(elecID, next::digitType::RAW,     next::chanType::PMT);
+			pmts->emplace_back((*elecIDs)[i], next::digitType::RAW,     next::chanType::PMT);
 		}
-		positions[elecID] = pmts->size() - 1;
+		positions[(*elecIDs)[i]] = pmts->size() - 1;
+		next::Digit * dgt = &(pmts->back());
+		createWaveform(dgt, bufferSamples);
 	}
 }
 
@@ -1152,12 +1161,6 @@ void next::RawDataInput::writeEvent(){
 	blrs.reserve(32);
 	sipms.reserve(1792);
 
-	for(unsigned int i=0; i<pmtDgts_->size(); i++){
-		if((*pmtDgts_)[i].active()){
-		std::cout << "pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
-		}
-	}
-
 	auto erIt = pmtDgts_->begin();
 	while ( erIt != pmtDgts_->end() ){
 		int chid = (*erIt).chID();
@@ -1190,6 +1193,8 @@ void next::RawDataInput::writeEvent(){
 				if( (*erIt).active()){
 					extPmt.push_back(*erIt);
 				}
+			}else{
+				pmts.push_back(*erIt);
 			}
 		}
 		if(!delCh){

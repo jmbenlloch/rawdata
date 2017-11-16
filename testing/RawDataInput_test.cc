@@ -220,7 +220,7 @@ TEST_CASE("Decode charge", "[decode_charge]") {
 
 			int16_t * ptr = (int16_t*) data;
 			int time = 0;
-			rdata.decodeChargeRefactor(ptr, digits, channelMaskVec, positions, time);
+			rdata.decodeCharge(ptr, digits, channelMaskVec, positions, time);
 
 			for(unsigned word=0; word<nwords; word++){
 //				printf("data[%d] = 0x%04x\n", word, data[word]);
@@ -228,7 +228,7 @@ TEST_CASE("Decode charge", "[decode_charge]") {
 
 			//Check there is one charge in each Digit and it's value is 0xFFF
 			for(unsigned s=0; s<nsensors; s++){
-				printf("s: %d\n", s);
+				//printf("s: %d\n", s);
 				REQUIRE(digits[s].nSamples() == 1);
 				REQUIRE(digits[s].waveformNew()[0] == 0xFFF);
 			}
@@ -295,7 +295,7 @@ TEST_CASE("Decode charge", "[decode_charge]") {
 			//Decode data
 			int16_t * ptr = (int16_t*) data;
 			int time = 0;
-			rdata.decodeChargeRefactor(ptr, digits, channelMaskVec, positions, time);
+			rdata.decodeCharge(ptr, digits, channelMaskVec, positions, time);
 
 			// Test result
 			REQUIRE(digits.size() == max_sensors);
@@ -610,18 +610,19 @@ TEST_CASE("Test create PMTs", "[create_pmts]") {
 	int bufferSamples = 52000;
 	int pmtPositions[npmts];
 	int fec = 2;
+	std::vector<int> elecIDs = {0,1,2,3,4,5,6,7};
 
-	CreatePMTs(&pmts, pmtPositions, fec, false);
+	CreatePMTs(&pmts, pmtPositions, &elecIDs, bufferSamples, false);
 
 	for(unsigned int ch=0; ch<npmts; ch++){
 		REQUIRE(pmts[ch].digType() == next::digitType::RAW);
 		REQUIRE(pmts[ch].chType()  == next::chanType::PMT);
-		REQUIRE(pmts[ch].chID()    == computePmtElecID(fec, ch));
+		REQUIRE(pmts[ch].chID()    == elecIDs[ch]);
 		REQUIRE(pmtPositions[ch]   == ch);
 
-//		//Check waveforms are initialized to zero
-//		for(unsigned int samp=0; samp<bufferSamples; samp++){
-//			REQUIRE(pmts[ch].waveformNew()[samp] == 0);
-//		}
+		//Check waveforms are initialized to zero
+		for(unsigned int samp=0; samp<bufferSamples; samp++){
+			REQUIRE(pmts[ch].waveformNew()[samp] == 0);
+		}
 	}
 }
