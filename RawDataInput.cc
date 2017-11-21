@@ -598,7 +598,7 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 	for(unsigned int i=0; i<pmtDgts_->size(); i++){
 		int elecID = (*pmtDgts_)[i].chID();
 		int pos = pmtPosition[elecID];
-		printf("index: %d, elecID: %d, position: %d\n", i, elecID, pos);
+//		printf("index: %d, elecID: %d, position: %d\n", i, elecID, pos);
 	}
 
 	///Write pedestal
@@ -644,12 +644,14 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 				FT += BufferSamples;
 			}
 
+			std::cout << "ZS FT: " << FT << std::endl;
 			timeinmus = FT * CLOCK_TICK_;
 
 //			printf("timeinmus: %lf\n", timeinmus);
 //			printf("FT: %d\n", FT);
 
-			decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, timeinmus);
+			//decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, timeinmus);
+			decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
 
 		}else{
 			//If not ZS check next FT value, if not expected (0xffff) end of data
@@ -771,8 +773,8 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 	int BufferSamples = eventReader_->BufferSamples();
 
 	int ChannelMask = eventReader_->ChannelMask();
-	std::cout << "fec: " << FecId << "\tsipm channel mask: " << ChannelMask << std::endl;
-	std::cout << "febs: " << numberOfFEB << std::endl;
+//	std::cout << "fec: " << FecId << "\tsipm channel mask: " << ChannelMask << std::endl;
+//	std::cout << "febs: " << numberOfFEB << std::endl;
 
 	//Check if digits & waveforms has been created
 	if(sipmDgts_->size() == 0){
@@ -849,7 +851,6 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 				}
 
 				int FEBId = ((*payload_ptr) & 0x0FC00) >> 10;
-				_log->debug("Feb ID is 0x{:04x}", FEBId);
 				payload_ptr++;
 				if(verbosity_ >= 3){
 					_log->debug("Feb ID is 0x{:04x}", FEBId);
@@ -1074,6 +1075,7 @@ void next::RawDataInput::decodeChargePmtZS(int16_t* &ptr, next::DigitCollection 
 			ptr++;
 		}
 
+		_log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, Charge);
 		if(verbosity_ >= 4){
 			_log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, Charge);
 		}
@@ -1206,13 +1208,19 @@ void next::RawDataInput::writeEvent(){
 	unsigned int event_number = date_header->NbInRun();
 	run_ = date_header->RunNb();
 
+//	for(unsigned int i=0; i<pmts.size(); i++){
+//		std::cout << "pmt " << pmts[i].chID() << "\t charge[0]: " << pmts[i].waveformNew()[0] << std::endl;
+//	}
+
 	for(unsigned int i=0; i<pmts.size(); i++){
-		std::cout << "pmt " << pmts[i].chID() << "\t charge[0]: " << pmts[i].waveformNew()[0] << std::endl;
+		for(unsigned int j=0; j<pmts[i].nSamples(); j++){
+			std::cout << "pmt " << pmts[i].chID() << "\t charge["<< j << "]: " << pmts[i].waveformNew()[j] << std::endl;
+		}
 	}
 
-	std::cout << "pmts: " << pmts.size() << std::endl;
-	std::cout << "blrs: " << blrs.size() << std::endl;
-	std::cout << "ext pmts: " << extPmt.size() << std::endl;
+//	std::cout << "pmts: " << pmts.size() << std::endl;
+//	std::cout << "blrs: " << blrs.size() << std::endl;
+//	std::cout << "ext pmts: " << extPmt.size() << std::endl;
 	_writer->Write(pmts, blrs, extPmt, *sipmDgts_, eventTime_, event_number, run_);
 }
 

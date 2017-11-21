@@ -84,6 +84,9 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		extPmtDatasize = extPmt[0].nSamples();
 	}
 
+	_log->debug("PMTs: {}, wf: {}, SiPMs: {}, wf: {}",
+			npmt, pmtDatasize, nsipm, sipmDatasize);
+
 	std::cout << "pmt: " << pmtDatasize << ", sipms: " << sipmDatasize << ", extpmt: " << extPmtDatasize << std::endl;
 
 	if (_firstEvent){
@@ -172,6 +175,7 @@ void next::HDF5Writer::sortPmts(std::vector<next::Digit*> &sorted_sensors,
 	std::fill(sorted_sensors.begin(), sorted_sensors.end(), (next::Digit*) 0);
 	int sensorid;
 	for(unsigned int i=0; i<sensors.size(); i++){
+		std::cout << "sort pmts: " << i << std::endl;
 		sensorid = _sensors.elecToSensor(sensors[i].chID());
 		if(sensorid >= 0){
 			sorted_sensors[sensorid] = &(sensors[i]);
@@ -215,6 +219,7 @@ void next::HDF5Writer::StorePmtWaveforms(std::vector<next::Digit*> sensors,
 			index++;
 	}
 
+	std::cout << "nsensors: " << nsensors << ", size: " << datasize << ", evt: " << _ievt << std::endl;
 	WriteWaveforms(data, dataset, nsensors, datasize, _ievt);
 	delete[] data;
 }
