@@ -644,13 +644,11 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 				FT += BufferSamples;
 			}
 
-			std::cout << "ZS FT: " << FT << std::endl;
 			timeinmus = FT * CLOCK_TICK_;
 
 //			printf("timeinmus: %lf\n", timeinmus);
 //			printf("FT: %d\n", FT);
 
-			//decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, timeinmus);
 			decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
 
 		}else{
@@ -1021,7 +1019,6 @@ void next::RawDataInput::decodeCharge(int16_t* &ptr, next::DigitCollection &digi
 			_log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, Charge);
 		}
 
-	//	printf("ElecID is %d\t Time is %d\t Charge is 0x%04x\n", channelMaskVec[chan], time, Charge);
 		//Save data in Digits
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
 		dgt->waveformNew()[time] = Charge;
@@ -1075,14 +1072,12 @@ void next::RawDataInput::decodeChargePmtZS(int16_t* &ptr, next::DigitCollection 
 			ptr++;
 		}
 
-		_log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, Charge);
 		if(verbosity_ >= 4){
 			_log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, Charge);
 		}
 
 		//Save data in Digits
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
-		//TODO Fix
 		dgt->waveformNew()[time] = Charge;
 	}
 	ptr++;
@@ -1208,27 +1203,11 @@ void next::RawDataInput::writeEvent(){
 	unsigned int event_number = date_header->NbInRun();
 	run_ = date_header->RunNb();
 
-//	for(unsigned int i=0; i<pmts.size(); i++){
-//		std::cout << "pmt " << pmts[i].chID() << "\t charge[0]: " << pmts[i].waveformNew()[0] << std::endl;
-//	}
-
-	for(unsigned int i=0; i<pmts.size(); i++){
-		for(unsigned int j=0; j<pmts[i].nSamples(); j++){
-			std::cout << "pmt " << pmts[i].chID() << "\t charge["<< j << "]: " << pmts[i].waveformNew()[j] << std::endl;
-		}
-	}
-
-//	std::cout << "pmts: " << pmts.size() << std::endl;
-//	std::cout << "blrs: " << blrs.size() << std::endl;
-//	std::cout << "ext pmts: " << extPmt.size() << std::endl;
 	_writer->Write(pmts, blrs, extPmt, *sipmDgts_, eventTime_, event_number, run_);
 }
 
 void freeWaveformMemory(next::DigitCollection * sensors){
 	for(unsigned int i=0; i< sensors->size(); i++){
-		for(unsigned int j=0; j<1000; j++){
-	//		printf("s %d, charge[%d]: %d\n", (*sensors)[i].chID(), j, (*sensors)[i].waveformNew()[j]);
-		}
 		free((*sensors)[i].waveformNew());
 	}
 }
