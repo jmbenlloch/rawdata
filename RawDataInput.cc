@@ -238,7 +238,7 @@ bool next::RawDataInput::ReadDATEEvent()
 
 	//Num FEB
 	std::fill(sipmPosition, sipmPosition+1792,-1);
-	std::fill(pmtPosition, pmtPosition+32,-1);
+	std::fill(pmtPosition, pmtPosition+48,-1);
 
 	// Reset the output pointers.
 	pmtDgts_.reset(new DigitCollection);
@@ -354,9 +354,10 @@ bool next::RawDataInput::ReadDATEEvent()
 //		for(int i=0; i<100; i++){
 //			printf("payload[%d] = 0x%04x\n", i, payload_flip[i]);
 //		}
-		eventReader_->ReadHotelCommonHeader(payload_flip);
+		eventReader_->ReadCommonHeader(payload_flip);
 		int FWVersion = eventReader_->FWVersion();
 		int FECtype = eventReader_->FecType();
+		printf("FEC type: %d, version: %d\n", FECtype, FWVersion);
 
 		//FWVersion HOTEL
 		if (FWVersion == 8){
@@ -375,6 +376,27 @@ bool next::RawDataInput::ReadDATEEvent()
 //						std::cout << (*pmtDgts_)[i].nSamples() << "after read pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
 //					}
 //				}
+			}else if (FECtype==2){
+				if( verbosity_ >= 1 ){
+					_log->debug("This is a Trigger FEC");
+				}
+				ReadHotelTrigger(payload_flip,size);
+			}else  if (FECtype==1){
+				if( verbosity_ >= 1 ){
+					_log->debug("This is a SIPM FEC");
+				}
+				ReadHotelSipm(payload_flip, size);
+			}
+		}
+
+		printf("FEC type: %d, version: %d\n", FECtype, FWVersion);
+		//FWVersion INDIA
+		if (FWVersion == 9){
+			if (FECtype==0){
+				if( verbosity_ >= 1 ){
+					_log->debug("This is a PMT FEC");
+				}
+				ReadIndiaPmt(payload_flip,size);
 			}else if (FECtype==2){
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a Trigger FEC");
@@ -560,6 +582,7 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 	int TriggerFT = eventReader_->TriggerFT();
 	int FTBit = eventReader_->GetFTBit();
 	int ErrorBit = eventReader_->GetErrorBit();
+	int FWVersion = eventReader_->FWVersion();
 
 	if (ErrorBit){
 		auto myheader = (*headOut_).rbegin();
@@ -588,7 +611,7 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 	std::map<int, std::vector<int> > fec_chmask;
 	fec_chmask.emplace(fFecId, std::vector<int>());
 	int ChannelMask = eventReader_->ChannelMask();
-	pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId);
+	pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId, FWVersion);
 
 	//Create digits and waveforms for active channels
 	CreatePMTs(&*pmtDgts_, pmtPosition, &(fec_chmask[fFecId]), BufferSamples, ZeroSuppression);
@@ -633,7 +656,136 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 			int ftHighBit = (*buffer & 0x8000) >> 15;
 			ChannelMask = (*buffer & 0x0FF0) >> 4;
 			//printf("fthbit: %d, chmask: %d\n", ftHighBit, ChannelMask);
-			pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId);
+			pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId, FWVersion);
+
+//			for(int i=0; i<fec_chmask[fFecId].size(); i++){
+//				printf("pmt channel: %d\n", fec_chmask[fFecId][i]);
+//			}
+
+			FT = FT + ftHighBit*fMaxSample - fFirstFT;
+			if ( FT < 0 ){
+				FT += BufferSamples;
+			}
+
+			timeinmus = FT * CLOCK_TICK_;
+
+//			printf("timeinmus: %lf\n", timeinmus);
+//			printf("FT: %d\n", FT);
+
+			decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
+
+		}else{
+			//If not ZS check next FT value, if not expected (0xffff) end of data
+			if(!ZeroSuppression){
+				computeNextFThm(&nextFT, &nextFThm, eventReader_);
+				if(FT != (nextFThm & 0x0FFFF)){
+					if( verbosity_ >= 2 ){
+						_log->debug("nextFThm != FT: 0x{:04x}, 0x{:04x}", (nextFThm&0x0ffff), FT);
+					}
+					break;
+				}
+			}
+			//decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, timeinmus);
+			decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, time);
+		}
+	}
+
+//	for(unsigned int i=0; i<pmtDgts_->size(); i++){
+//		if((*pmtDgts_)[i].active()){
+//			std::cout << (*pmtDgts_)[i].nSamples() << " hotel pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
+//		}
+//	}
+}
+
+void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
+	std::cout << "WTF?!!!!" << std::endl;
+	double timeinmus = 0.;
+	int time = -1;
+
+	fFecId = eventReader_->FecId();
+	eventTime_ = eventReader_->TimeStamp();
+	int ZeroSuppression = eventReader_->ZeroSuppression();
+	int Baseline = eventReader_->Baseline();
+	fPreTrgSamples = eventReader_->PreTriggerSamples();
+	int BufferSamples = eventReader_->BufferSamples();
+	int TriggerFT = eventReader_->TriggerFT();
+	int FTBit = eventReader_->GetFTBit();
+	int ErrorBit = eventReader_->GetErrorBit();
+	int FWVersion = eventReader_->FWVersion();
+
+	if (ErrorBit){
+		auto myheader = (*headOut_).rbegin();
+		_log->warn("Event {} ErrorBit is {}, fec: {}", myheader->NbInRun(), ErrorBit, fFecId);
+		if(discard_){
+			return;
+		}
+	}
+
+	// Get here channel numbers & dualities
+	unsigned int TotalNumberOfPMTs = setDualChannels(eventReader_);
+
+	///Reading the payload
+	fFirstFT = TriggerFT;
+	timeinmus = 0 - CLOCK_TICK_;
+	if(ZeroSuppression){
+		int singleBuff = TriggerFT + FTBit*fMaxSample;
+		int trigDiff = BufferSamples - fPreTrgSamples;
+		fFirstFT = (singleBuff + trigDiff) % BufferSamples;
+	}
+
+	int nextFT = -1; //At start we don't know next FT value
+	int nextFThm = -1;
+
+	//Map febid -> channelmask
+	std::map<int, std::vector<int> > fec_chmask;
+	fec_chmask.emplace(fFecId, std::vector<int>());
+	int ChannelMask = eventReader_->ChannelMask();
+	pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId, FWVersion);
+
+	//Create digits and waveforms for active channels
+	CreatePMTs(&*pmtDgts_, pmtPosition, &(fec_chmask[fFecId]), BufferSamples, ZeroSuppression);
+	setActivePmts(&(fec_chmask[fFecId]), &*pmtDgts_, pmtPosition);
+
+
+	for(unsigned int i=0; i<pmtDgts_->size(); i++){
+		int elecID = (*pmtDgts_)[i].chID();
+		int pos = pmtPosition[elecID];
+//		printf("index: %d, elecID: %d, position: %d\n", i, elecID, pos);
+	}
+
+	///Write pedestal
+	if(Baseline){
+		writePmtPedestals(eventReader_, &*pmtDgts_, &(fec_chmask[fFecId]), pmtPosition);
+	}
+
+	//TODO maybe size of payload could be used here to stop, but the size is
+	//2x size per link and there are manu FFFF at the end, which are the actual
+	//stop condition...
+	while (true){
+		int FT = *buffer & 0x0FFFF;
+		//printf("FT: 0x%04x\n", FT);
+
+		timeinmus = timeinmus + CLOCK_TICK_;
+		time++;
+		buffer++;
+
+		//TODO ZS
+		if(ZeroSuppression){
+		//	for(int i=0; i<6; i++){
+		//		printf("buffer[%d] = 0x%04x\n", i, buffer[i]);
+		//	}
+
+			//stop condition
+			//printf("nextword = 0x%04x\n", *buffer);
+			if(FT == 0x0FFFF){
+				break;
+			}
+
+			// Read new FThm bit and channel mask
+			int ftHighBit = (*buffer & 0x8000) >> 15;
+			ChannelMask = (*buffer & 0x0FF0) >> 4;
+			//printf("fthbit: %d, chmask: %d\n", ftHighBit, ChannelMask);
+			pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId, FWVersion);
 
 //			for(int i=0; i<fec_chmask[fFecId].size(); i++){
 //				printf("pmt channel: %d\n", fec_chmask[fFecId][i]);
@@ -683,9 +835,16 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 	unsigned int numberOfChannels = reader->NumberOfChannels();
 	int ChannelMask = reader->ChannelMask();
 	int DualModeMask = reader->DualModeMask();
+	int FWVersion = eventReader_->FWVersion();
+
+	int maxChannels = 8;
+	if (FWVersion == 9){
+		maxChannels = 12;
+		std::cout << "india version dual channels" << std::endl;
+	}
 
 	unsigned int NumberOfPMTs = 0;
-	for (int nCh=0; nCh < 8; nCh++){
+	for (int nCh=0; nCh < maxChannels; nCh++){
 		if(NumberOfPMTs < numberOfChannels){
 			// Check which ones are working
 			while (!CheckBitCounter){
@@ -698,10 +857,16 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 
 			// Compute PMT ID
 			ChannelNumber = counter-1;
-			ElecID = computePmtElecID(reader->FecId(), ChannelNumber);
+			ElecID = computePmtElecID(reader->FecId(), ChannelNumber, FWVersion);
+			printf("duals elecid: %d\n", ElecID);
+			printf("size duals: %d\n", dualChannels.size());
 			if (dualCh){
 				dualChannels[ElecID] = dualCh;
 				int pairCh = channelsRelation[ElecID];
+				if (FWVersion == 9){
+					pairCh = channelsRelationIndia[ElecID];
+				}
+				printf("pair ch: %d\n", pairCh);
 				dualChannels[pairCh] = dualCh;
 			}
 		}
@@ -718,15 +883,22 @@ void writePmtPedestals(next::EventReader * reader, next::DigitCollection * pmts,
 	}
 }
 
-int computePmtElecID(int fecid, int channel){
+int computePmtElecID(int fecid, int channel, int fwversion){
 	int ElecID;
+	int channels_per_fec = 8;
+	if(fwversion == 9){
+		channels_per_fec = 12;
+	}
+
 	if (fecid < 4){
 		//FECs 2-3
-		ElecID = (fecid-2)*8 + channel;
+		ElecID = (fecid-2) * channels_per_fec + channel;
 	}else{
 		//FECs 10-11
-		ElecID = (fecid-8)*8 + channel;
+		ElecID = (fecid-8) * channels_per_fec + channel;
 	}
+
+	printf("fec: %d, ch: %d, elecid: %d\n", fecid, channel, ElecID);
 	return ElecID;
 }
 
@@ -882,7 +1054,7 @@ void setActivePmts(std::vector<int> * channelMaskVec, next::DigitCollection * pm
 	}
 }
 
-int next::RawDataInput::pmtsChannelMask(int16_t chmask, std::vector<int> &channelMaskVec, int fecId){
+int next::RawDataInput::pmtsChannelMask(int16_t chmask, std::vector<int> &channelMaskVec, int fecId, int fwversion){
 	int TotalNumberOfPMTs = 0;
 	int ElecID;
 
@@ -890,15 +1062,16 @@ int next::RawDataInput::pmtsChannelMask(int16_t chmask, std::vector<int> &channe
 	for (int t=0; t < 16; t++){
 		int bit = CheckBit(chmask, t);
 		if(bit>0){
-			ElecID = computePmtElecID(fecId, t);
+			ElecID = computePmtElecID(fecId, t, fwversion);
+			std::cout << "elecid: " << ElecID << std::endl;
 			channelMaskVec.push_back(ElecID);
 			TotalNumberOfPMTs++;
 		}
 	}
 
-//	for(unsigned int i=0; i<channelMaskVec.size(); i++){
-//		std::cout << "channel: " << channelMaskVec[i] << std::endl;
-//	}
+	for(unsigned int i=0; i<channelMaskVec.size(); i++){
+		std::cout << "channel: " << channelMaskVec[i] << std::endl;
+	}
 	//if(verbosity_>=2){
 	//	_log->debug("Channel mask is 0x{:04x}", temp);
 	//}
@@ -1116,6 +1289,7 @@ void CreatePMTs(next::DigitCollection * pmts, int * positions, std::vector<int> 
 		}else{
 			pmts->emplace_back((*elecIDs)[i], next::digitType::RAW,     next::chanType::PMT);
 		}
+		std::cout << "pmt: " << (*elecIDs)[i] << std::endl;
 		positions[(*elecIDs)[i]] = pmts->size() - 1;
 		next::Digit * dgt = &(pmts->back());
 		createWaveform(dgt, bufferSamples);

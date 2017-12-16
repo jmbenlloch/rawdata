@@ -56,6 +56,7 @@ public:
   bool ReadDATEEvent();
   void ReadHotelSipm(int16_t * buffer, unsigned int size);
   void ReadHotelPmt(int16_t * buffer, unsigned int size);
+  void ReadIndiaPmt(int16_t * buffer, unsigned int size);
   void ReadHotelTrigger(int16_t * buffer, unsigned int size);
 
   ///Set Trigger class
@@ -69,7 +70,7 @@ public:
   void decodeChargePmtZS(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
   int computeSipmTime(int16_t * &ptr, next::EventReader * reader);
   int sipmChannelMask(int16_t * &ptr, std::vector<int> &channelMaskVec, int febId);
-  int pmtsChannelMask(int16_t chmask, std::vector<int> &channelMaskVec, int fecId);
+  int pmtsChannelMask(int16_t chmask, std::vector<int> &channelMaskVec, int fecId, int FWVersion);
 
   void writeEvent();
 
@@ -109,6 +110,8 @@ private:
 
   //Relation between real channels & BLR ones
   const std::vector<int> channelsRelation {2,3,0,1, 6,7,4,5, 10,11,8,9, 14,15,12,13, 18,19,16,17, 22,23,20,21, 26,27,24,25, 30,31,28,29};
+  const std::vector<int> channelsRelationIndia {12,13,14,15, 16,17,18,19, 20,21,22,23, 0,1,2,3, 4,5,6,7, 8,9,10,11, 36,37,38,39, 40,41,42,43, 44,45,46,47, 24,25,26,27, 28,29,30,31, 32,33,34,35};
+
   std::vector<int> dualChannels;
 
   // verbosity control
@@ -142,7 +145,7 @@ private:
 }
 
 void flipWords(unsigned int size, int16_t* in, int16_t* out);
-int computePmtElecID(int fecid, int channel);
+int computePmtElecID(int fecid, int channel, int version);
 void buildSipmData(unsigned int size, int16_t* ptr, int16_t * ptrA, int16_t * ptrB);
 bool isEventSelected(eventHeaderStruct& event);
 void CreateSiPMs(next::DigitCollection * sipms, int * positions);

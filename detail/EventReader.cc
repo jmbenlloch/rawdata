@@ -162,7 +162,7 @@ void next::EventReader::readFTl(int16_t* &ptr){
 	ptr++;
 }
 
-void next::EventReader::readBaselines(int16_t* &ptr){
+void next::EventReader::readHotelBaselines(int16_t* &ptr){
 	// Baselines
 	// Pattern goes like this (two times):
 	// 0xFFF0, 0x000F, 12 bits,  4 bits; ch0, ch1
@@ -220,7 +220,56 @@ void next::EventReader::readBaselines(int16_t* &ptr){
 	}
 }
 
-void next::EventReader::ReadHotelCommonHeader(int16_t* &ptr){
+void next::EventReader::readIndiaBaselines(int16_t* &ptr){
+	// Baselines
+	// Pattern goes like this (two times):
+	// 0xFFF0, 0x000F, 12 bits,  4 bits; ch0, ch1
+	// 0xFF00, 0x00FF,  8 bits,  8 bits; ch1, ch2
+	// 0x000F, 0x0FFF,  4 bits, 12 bits; ch2, ch3
+	int baselineTemp;
+	peds.clear();
+
+	//Baseline ch0
+	baselineTemp = (*ptr & 0xFFF0) >> 4;
+	peds.push_back(baselineTemp);
+
+	//Baseline ch1
+	baselineTemp = (*ptr & 0x000F) << 8;
+	ptr++;
+	baselineTemp = baselineTemp + ((*ptr & 0xFF00)>>8);
+	peds.push_back(baselineTemp);
+
+	//Baseline ch2
+	baselineTemp = (*ptr & 0x00FF) << 4;
+	ptr++;
+	baselineTemp = baselineTemp + ((*ptr & 0xF000)>>12);
+	peds.push_back(baselineTemp);
+
+	//Baseline ch3
+	baselineTemp = (*ptr & 0x0FFF);
+	peds.push_back(baselineTemp);
+
+	//Baseline ch4
+	ptr++;
+	baselineTemp = (*ptr & 0xFFF0) >> 4;
+	peds.push_back(baselineTemp);
+	baselineTemp = (*ptr & 0x000F) << 8;
+
+	//Baseline ch5
+	ptr++;
+	baselineTemp = baselineTemp + ((*ptr & 0xFF00)>>8);
+	peds.push_back(baselineTemp);
+	baselineTemp = (*ptr & 0x00FF) << 4;
+	ptr++;
+
+	if (verbose_ >= 2){
+		for(int i=0; i<6; i++){
+			_log->debug("Baseline {} is {}", i, peds[i]);
+		}
+	}
+}
+
+void next::EventReader::ReadCommonHeader(int16_t* &ptr){
 	readSeqCounter(ptr);
 	if (!fSequenceCounter){
 		readFormatID(ptr);
@@ -228,7 +277,12 @@ void next::EventReader::ReadHotelCommonHeader(int16_t* &ptr){
 		readEventID(ptr);
 		readEventConf(ptr);
 		if(fBaseline){
-			readBaselines(ptr);
+			if(fFWVersion == 8){
+				readHotelBaselines(ptr);
+			}
+			if(fFWVersion == 9){
+				readIndiaBaselines(ptr);
+			}
 		}
 		readFecID(ptr);
 		readCTandFTh(ptr);

@@ -21,7 +21,7 @@ namespace next {
     ~EventReader();
 
     void FlipWords(int16_t* &, int16_t* &);
-    void ReadHotelCommonHeader(int16_t* &ptr);
+    void ReadCommonHeader(int16_t* &ptr);
 	void readSeqCounter(int16_t* &ptr);
 	void readFormatID(int16_t* &ptr);
 	void readWordCount(int16_t* &ptr);
@@ -30,7 +30,8 @@ namespace next {
 	void readFecID(int16_t* &ptr);
 	void readCTandFTh(int16_t* &ptr);
 	void readFTl(int16_t* &ptr);
-	void readBaselines(int16_t* &ptr);
+	void readHotelBaselines(int16_t* &ptr);
+	void readIndiaBaselines(int16_t* &ptr);
 
     unsigned int FWVersion() const;
     unsigned int FecType() const;

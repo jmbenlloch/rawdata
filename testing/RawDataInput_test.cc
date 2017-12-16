@@ -46,13 +46,26 @@ TEST_CASE("Test seq counter removal", "[seqcounter_removal]") {
 }
 
 TEST_CASE("Test PMT elecID", "[pmt_elecid]") {
+	// Hotel version
 	//We are using FEC 2-3 for channels 0-15
 	//and FECs 10-11 for 16-31
+	int version = 8;
 	for(int ch=0; ch<8; ch++){
-		REQUIRE(computePmtElecID( 2, ch) == ch);
-		REQUIRE(computePmtElecID( 3, ch) == ch+8);
-		REQUIRE(computePmtElecID(10, ch) == ch+16);
-		REQUIRE(computePmtElecID(11, ch) == ch+24);
+		REQUIRE(computePmtElecID( 2, ch, version) == ch);
+		REQUIRE(computePmtElecID( 3, ch, version) == ch+8);
+		REQUIRE(computePmtElecID(10, ch, version) == ch+16);
+		REQUIRE(computePmtElecID(11, ch, version) == ch+24);
+	}
+
+	// India version
+	//We are using FEC 2-3 for channels 0-23
+	//and FECs 10-11 for 24-47
+	version = 9;
+	for(int ch=0; ch<12; ch++){
+		REQUIRE(computePmtElecID( 2, ch, version) == ch);
+		REQUIRE(computePmtElecID( 3, ch, version) == ch+12);
+		REQUIRE(computePmtElecID(10, ch, version) == ch+24);
+		REQUIRE(computePmtElecID(11, ch, version) == ch+36);
 	}
 }
 
@@ -320,6 +333,7 @@ TEST_CASE("Test PMTs Channel Mask", "[pmt_chmask]") {
 	int16_t chmask;
 	std::vector<int> channelMaskVec;
 	std::vector<int> pmtFecs = {2,3,10,11};
+	int version = 8;
 
 	//First dim: pmt, second dim: channel ids
 	const unsigned int nFecs = 4;
@@ -327,7 +341,7 @@ TEST_CASE("Test PMTs Channel Mask", "[pmt_chmask]") {
 	int correctChannels[nFecs][nChannelsPerFec];
 	for(unsigned int fec=0; fec < pmtFecs.size(); fec++){
 		for(unsigned int ch=0; ch < nChannelsPerFec; ch++){
-			correctChannels[fec][ch] = computePmtElecID(pmtFecs[fec], ch);
+			correctChannels[fec][ch] = computePmtElecID(pmtFecs[fec], ch, version);
 		}
 	}
 
@@ -336,7 +350,7 @@ TEST_CASE("Test PMTs Channel Mask", "[pmt_chmask]") {
 	SECTION("Test all pmts in all FECs" ) {
 		for(unsigned int fec=0; fec < pmtFecs.size(); fec++){
 			chmask = 0x00FF;
-			rdata.pmtsChannelMask(chmask, channelMaskVec, pmtFecs[fec]);
+			rdata.pmtsChannelMask(chmask, channelMaskVec, pmtFecs[fec], version);
 			//Check there are 8 channels and all have the proper ID & order
 			REQUIRE(channelMaskVec.size() == 8);
 			for(unsigned int ch=0; ch < nChannelsPerFec; ch++){
@@ -352,7 +366,7 @@ TEST_CASE("Test PMTs Channel Mask", "[pmt_chmask]") {
 		for(unsigned int fec=0; fec < pmtFecs.size(); fec++){
 			chmask = 0x0001; // now we only use 8 bits
 			for(unsigned int ch=0; ch < nChannelsPerFec; ch++){
-				rdata.pmtsChannelMask(chmask, channelMaskVec, pmtFecs[fec]);
+				rdata.pmtsChannelMask(chmask, channelMaskVec, pmtFecs[fec], version);
 
 				// Test result
 				REQUIRE(channelMaskVec.size() == 1);

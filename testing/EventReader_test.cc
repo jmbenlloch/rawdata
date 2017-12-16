@@ -49,7 +49,7 @@ TEST_CASE( "Create event reader", "[eventreader]" ) {
 	next::EventReader* reader = new next::EventReader(0);
 
     SECTION("Test common header reader" ) {
-		reader->ReadHotelCommonHeader(ptr);
+		reader->ReadCommonHeader(ptr);
 		REQUIRE(reader->SequenceCounter() == 0);
     	//Test Format ID
 		REQUIRE(reader->FecType() == 0);
@@ -645,7 +645,7 @@ TEST_CASE( "Test baselines", "[baselines]" ) {
 
     SECTION("All active") {
 		for (int i=0; i<nsensors; i++){
-			reader->readBaselines(ptr[i]);
+			reader->readHotelBaselines(ptr[i]);
 			REQUIRE(reader->Pedestal(i) == 0x0FFF);
 			REQUIRE(ptr[i] == ptr_orig[i] + nwords);
 		}
@@ -661,7 +661,7 @@ TEST_CASE( "Test baselines", "[baselines]" ) {
 
     SECTION("All inactive" ) {
 		for (int i=0; i<nsensors; i++){
-			reader->readBaselines(ptr[i]);
+			reader->readHotelBaselines(ptr[i]);
 			REQUIRE(reader->Pedestal(i) == 0);
 			REQUIRE(ptr[i] == ptr_orig[i] + nwords);
 		}

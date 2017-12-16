@@ -2,7 +2,7 @@
     "file_in":"/home/jmbenlloch/next/daq/canfranc/time/run_3733.gdc1next.next-new.000.rd",
     "file_out": "/home/jmbenlloch/next/rawdatainput/fileout.h5",
     "two_files": true,
-	"max_events":1,
+	"max_events":1000,
 	"keep_masked": false,
 	"ext_trigger": 15,
 	"skip": 0,
