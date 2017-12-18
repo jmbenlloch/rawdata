@@ -356,7 +356,6 @@ bool next::RawDataInput::ReadDATEEvent()
 		eventReader_->ReadCommonHeader(payload_flip);
 		fwVersion = eventReader_->FWVersion();
 		int FECtype = eventReader_->FecType();
-		printf("FEC type: %d, version: %d\n", FECtype, fwVersion);
 
 		//FWVersion HOTEL
 		if (fwVersion == 8){
@@ -388,7 +387,6 @@ bool next::RawDataInput::ReadDATEEvent()
 			}
 		}
 
-		printf("FEC type: %d, version: %d\n", FECtype, fwVersion);
 		//FWVersion INDIA
 		if (fwVersion == 9){
 			if (FECtype==0){
@@ -840,7 +838,6 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 		maxChannels = 12;
 	}
 
-	printf("chmask: 0x%04x, maxchannels: %d\n", ChannelMask, maxChannels);
 	unsigned int NumberOfPMTs = 0;
 	for (int nCh=0; nCh < maxChannels; nCh++){
 		if(NumberOfPMTs < numberOfChannels){
@@ -856,14 +853,12 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 			// Compute PMT ID
 			ChannelNumber = counter-1;
 			ElecID = computePmtElecID(reader->FecId(), ChannelNumber, FWVersion);
-			printf("duals elecid: %d, ChNumber: %d, counter: %d\n", ElecID, ChannelNumber, counter);
 			if (dualCh){
 				dualChannels[ElecID] = dualCh;
 				int pairCh = channelsRelation[ElecID];
 				if (FWVersion == 9){
 					pairCh = channelsRelationIndia[ElecID];
 				}
-				printf("pair ch: %d\n", pairCh);
 				dualChannels[pairCh] = dualCh;
 			}
 		}
@@ -911,7 +906,6 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 		}
 	}
 
-	printf("fec: %d, ch: %d, elecid: %d\n", fecid, channel, ElecID);
 	return ElecID;
 }
 
@@ -1076,15 +1070,14 @@ int next::RawDataInput::pmtsChannelMask(int16_t chmask, std::vector<int> &channe
 		int bit = CheckBit(chmask, t);
 		if(bit>0){
 			ElecID = computePmtElecID(fecId, t, fwversion);
-			std::cout << "elecid: " << ElecID << std::endl;
 			channelMaskVec.push_back(ElecID);
 			TotalNumberOfPMTs++;
 		}
 	}
 
-	for(unsigned int i=0; i<channelMaskVec.size(); i++){
-		std::cout << "channel: " << channelMaskVec[i] << std::endl;
-	}
+//	for(unsigned int i=0; i<channelMaskVec.size(); i++){
+//		std::cout << "channel: " << channelMaskVec[i] << std::endl;
+//	}
 	//if(verbosity_>=2){
 	//	_log->debug("Channel mask is 0x{:04x}", temp);
 	//}
@@ -1302,7 +1295,6 @@ void CreatePMTs(next::DigitCollection * pmts, int * positions, std::vector<int> 
 		}else{
 			pmts->emplace_back((*elecIDs)[i], next::digitType::RAW,     next::chanType::PMT);
 		}
-		std::cout << "pmt: " << (*elecIDs)[i] << std::endl;
 		positions[(*elecIDs)[i]] = pmts->size() - 1;
 		next::Digit * dgt = &(pmts->back());
 		createWaveform(dgt, bufferSamples);
