@@ -61,7 +61,6 @@ function make_environment {
 }
 
 function set_env {
-	export PATH="$HOME/miniconda/bin:$PATH"
     source activate rawdata
 	export RD_DIR=`pwd`/
 	export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
@@ -108,7 +107,7 @@ case $COMMAND in
        echo "source $THIS install_and_check"
        echo "source $THIS install"
        echo "source $THIS run_tests"
-       echo "bash   $THIS compile_and_test"
+       echo "source $THIS compile_and_test"
        echo "source $THIS env"
        echo "bash   $THIS clean"
        ;;

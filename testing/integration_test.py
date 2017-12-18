@@ -38,7 +38,7 @@ def test_outputfile(tmpdir, RD_DIR, filein, fileout, twofiles):
     with open(config_file, 'w') as outfile:
         json.dump(data, outfile)
 
-    cmd = '{}/main {}'.format(RD_DIR, config_file)
+    cmd = '{}/decode {}'.format(RD_DIR, config_file)
     output = check_output(cmd, shell=True, executable='/bin/bash')
 
     h5out  = tb.open_file(fileout)
