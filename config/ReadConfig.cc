@@ -25,7 +25,7 @@ void ReadConfig::parse(){
 	_twofiles   = _obj.get("two_files", false).asBool();
 	_filein     = _obj["file_in"].asString();
 	_fileout    = _obj["file_out"].asString();
-	_keepMasked = _obj.get("keep_masked", false).asBool();
+	_nodb       = _obj.get("no_db", false).asBool();
 	_discard    = _obj.get("discard", true).asBool();
 	_copyEvts   = _obj.get("copy_evts", false).asBool();
 	_skip       = _obj.get("skip", 0).asInt();
@@ -40,7 +40,7 @@ void ReadConfig::parse(){
 	_log->info("Verbosity: {}", _verbosity);
 	_log->info("twofiles: {}", _twofiles);
 	_log->info("External trigger channel: {}", _extTrigger);
-	_log->info("Keep masked channels: {}", _keepMasked);
+	_log->info("Keep masked channels: {}", _nodb);
 	_log->info("Discard error events: {}", _discard);
 	_log->info("Copy events from input: {}", _copyEvts);
 	_log->info("Skip events: {}", _skip);

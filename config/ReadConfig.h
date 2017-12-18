@@ -18,7 +18,7 @@ class ReadConfig {
 		std::string file_out();
 		int max_events();
 		bool two_files();
-		bool keep_masked();
+		bool no_db();
 		void parse();
 		int verbosity();
 		int extTrigger();
@@ -39,7 +39,7 @@ class ReadConfig {
 		std::string _fileout;
 		int _maxevents;
 		bool _twofiles;
-		bool _keepMasked;
+		bool _nodb;
 		bool _discard;
 		int _verbosity;
 		int _skip;
@@ -62,7 +62,7 @@ inline int ReadConfig::max_events(){return _maxevents;}
 
 inline bool ReadConfig::two_files(){return _twofiles;}
 
-inline bool ReadConfig::keep_masked(){return _keepMasked;}
+inline bool ReadConfig::no_db(){return _nodb;}
 
 inline bool ReadConfig::discard(){return _discard;}
 

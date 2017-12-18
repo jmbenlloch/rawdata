@@ -15,6 +15,7 @@ next::HDF5Writer::HDF5Writer(ReadConfig * config) :
 	if(config->verbosity() > 0){
 		_log->set_level(spd::level::debug);
 	}
+	_nodb = config->no_db();
 }
 
 next::HDF5Writer::~HDF5Writer(){
@@ -62,6 +63,8 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	hsize_t npmt   = pmts.size();
 	hsize_t nblr   = blrs.size();
 	hsize_t nsipm = sipms.size();
+
+	std::cout << npmt << ", " << nblr << ", " << nsipm << std::endl;
 
 	bool hasPmts  = npmt > 0;
 	bool hasBlrs  = nblr > 0;

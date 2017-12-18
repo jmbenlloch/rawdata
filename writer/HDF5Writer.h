@@ -35,6 +35,8 @@ namespace next{
 	//! First event
 	bool _firstEvent;
 
+	bool _nodb;
+
 	//! Group for Run info
 	size_t _rinfoG;
 

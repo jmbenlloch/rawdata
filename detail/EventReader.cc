@@ -109,6 +109,18 @@ void next::EventReader::readEventConf(int16_t* &ptr){
 	}
 }
 
+void next::EventReader::readIndiaFecID(int16_t* &ptr){
+	//FEC ID
+	fNumberOfChannels = *ptr & 0x001F;
+	fFecId = (*ptr & 0x0FFE0) >> 5;
+	ptr++;
+
+	if (verbose_ >= 2){
+		_log->debug("Number of channels: 0x{:04x}", fNumberOfChannels);
+		_log->debug("FEC ID: 0x{:04x}", fFecId);
+	}
+}
+
 void next::EventReader::readFecID(int16_t* &ptr){
 	//FEC ID
 	fNumberOfChannels = *ptr & 0x001F;
@@ -279,12 +291,13 @@ void next::EventReader::ReadCommonHeader(int16_t* &ptr){
 		if(fBaseline){
 			if(fFWVersion == 8){
 				readHotelBaselines(ptr);
+				readFecID(ptr);
 			}
 			if(fFWVersion == 9){
 				readIndiaBaselines(ptr);
+				readIndiaFecID(ptr);
 			}
 		}
-		readFecID(ptr);
 		readCTandFTh(ptr);
 		readFTl(ptr);
 	}

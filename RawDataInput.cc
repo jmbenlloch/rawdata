@@ -26,7 +26,7 @@ next::RawDataInput::RawDataInput(ReadConfig * config, HDF5Writer * writer) :
 	skip_(config->skip()),
 	max_events_(config->max_events()),
 	buffer_(NULL),
-	dualChannels(32,0),
+	dualChannels(48,0),
 	verbosity_(config->verbosity()),
 	trigOut_(),
 	headOut_(),
@@ -105,7 +105,6 @@ int next::RawDataInput::loadNextEvent(std::FILE* file, unsigned char ** buffer){
 void next::RawDataInput::readFile(std::string const & filename)
 {
 	_log->debug("Open file: {}", filename);
-
 	bool gdc2first = false;
 
 	int nevents1=0, firstEvtGDC1;
@@ -355,12 +354,12 @@ bool next::RawDataInput::ReadDATEEvent()
 //			printf("payload[%d] = 0x%04x\n", i, payload_flip[i]);
 //		}
 		eventReader_->ReadCommonHeader(payload_flip);
-		int FWVersion = eventReader_->FWVersion();
+		fwVersion = eventReader_->FWVersion();
 		int FECtype = eventReader_->FecType();
-		printf("FEC type: %d, version: %d\n", FECtype, FWVersion);
+		printf("FEC type: %d, version: %d\n", FECtype, fwVersion);
 
 		//FWVersion HOTEL
-		if (FWVersion == 8){
+		if (fwVersion == 8){
 			if (FECtype==0){
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a PMT FEC");
@@ -389,9 +388,9 @@ bool next::RawDataInput::ReadDATEEvent()
 			}
 		}
 
-		printf("FEC type: %d, version: %d\n", FECtype, FWVersion);
+		printf("FEC type: %d, version: %d\n", FECtype, fwVersion);
 		//FWVersion INDIA
-		if (FWVersion == 9){
+		if (fwVersion == 9){
 			if (FECtype==0){
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a PMT FEC");
@@ -698,7 +697,6 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 }
 
 void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
-	std::cout << "WTF?!!!!" << std::endl;
 	double timeinmus = 0.;
 	int time = -1;
 
@@ -840,9 +838,9 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 	int maxChannels = 8;
 	if (FWVersion == 9){
 		maxChannels = 12;
-		std::cout << "india version dual channels" << std::endl;
 	}
 
+	printf("chmask: 0x%04x, maxchannels: %d\n", ChannelMask, maxChannels);
 	unsigned int NumberOfPMTs = 0;
 	for (int nCh=0; nCh < maxChannels; nCh++){
 		if(NumberOfPMTs < numberOfChannels){
@@ -858,8 +856,7 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 			// Compute PMT ID
 			ChannelNumber = counter-1;
 			ElecID = computePmtElecID(reader->FecId(), ChannelNumber, FWVersion);
-			printf("duals elecid: %d\n", ElecID);
-			printf("size duals: %d\n", dualChannels.size());
+			printf("duals elecid: %d, ChNumber: %d, counter: %d\n", ElecID, ChannelNumber, counter);
 			if (dualCh){
 				dualChannels[ElecID] = dualCh;
 				int pairCh = channelsRelation[ElecID];
@@ -886,16 +883,32 @@ void writePmtPedestals(next::EventReader * reader, next::DigitCollection * pmts,
 int computePmtElecID(int fecid, int channel, int fwversion){
 	int ElecID;
 	int channels_per_fec = 8;
-	if(fwversion == 9){
-		channels_per_fec = 12;
+
+	if(fwversion == 8){
+		if (fecid < 4){
+			//FECs 2-3
+			ElecID = (fecid-2) * channels_per_fec + channel;
+		}else{
+			//FECs 10-11
+			ElecID = (fecid-8) * channels_per_fec + channel;
+		}
 	}
 
-	if (fecid < 4){
-		//FECs 2-3
-		ElecID = (fecid-2) * channels_per_fec + channel;
-	}else{
-		//FECs 10-11
-		ElecID = (fecid-8) * channels_per_fec + channel;
+	if(fwversion == 9){
+		/***************************************
+		 * 2 -> 0,2,4,6,8,12,14,16,18,20,22    *
+		 * 3 -> 1,3,5,7,9,11,13,15,17,19,21,23 *
+		 * 10-> 24,26,28, ..., 46              *
+		 * 11-> 25,27,29, ..., 47              *
+		 * ************************************/
+		if (fecid % 2 == 0){
+			ElecID = channel*2;
+		}else{
+			ElecID = channel*2+1;
+		}
+		if (fecid >= 10){
+			ElecID += 24;
+		}
 	}
 
 	printf("fec: %d, ch: %d, elecid: %d\n", fecid, channel, ElecID);
@@ -1334,41 +1347,58 @@ void next::RawDataInput::writeEvent(){
 
 	auto erIt = pmtDgts_->begin();
 	while ( erIt != pmtDgts_->end() ){
-		int chid = (*erIt).chID();
-		bool delCh = false;
-		if (dualChannels[chid] && (*erIt).active()){
-			//In the first fec
-			if(chid <=15){
-				// the upper channel is the BLR one
-				if(chid > channelsRelation[chid]){
-					(*erIt).setChID(channelsRelation[chid]);
-					blrs.push_back(*erIt);
-					erIt = (*pmtDgts_).erase( erIt );
-					delCh = true;
+		if (fwVersion == 8){
+			int chid = (*erIt).chID();
+			bool delCh = false;
+			if (dualChannels[chid] && (*erIt).active()){
+				//In the first fec
+				if(chid <=15){
+					// the upper channel is the BLR one
+					if(chid > channelsRelation[chid]){
+						(*erIt).setChID(channelsRelation[chid]);
+						blrs.push_back(*erIt);
+						erIt = (*pmtDgts_).erase( erIt );
+						delCh = true;
+					}else{
+						pmts.push_back(*erIt);
+					}
 				}else{
-					pmts.push_back(*erIt);
+					// In the second fec the lower channel is the BLR one
+					if(chid < channelsRelation[chid]){
+						(*erIt).setChID(channelsRelation[chid]);
+						blrs.push_back(*erIt);
+						erIt = (*pmtDgts_).erase( erIt );
+						delCh = true;
+					}else{
+						pmts.push_back(*erIt);
+					}
 				}
 			}else{
-				// In the second fec the lower channel is the BLR one
-				if(chid < channelsRelation[chid]){
-					(*erIt).setChID(channelsRelation[chid]);
-					blrs.push_back(*erIt);
-					erIt = (*pmtDgts_).erase( erIt );
-					delCh = true;
+				if (chid == externalTriggerCh_){
+					if( (*erIt).active()){
+						extPmt.push_back(*erIt);
+					}
 				}else{
 					pmts.push_back(*erIt);
 				}
 			}
-		}else{
-			if (chid == externalTriggerCh_){
-				if( (*erIt).active()){
-					extPmt.push_back(*erIt);
-				}
-			}else{
-				pmts.push_back(*erIt);
+			if(!delCh){
+				++erIt;
 			}
 		}
-		if(!delCh){
+
+		if(fwVersion == 9){
+			int chid = (*erIt).chID();
+			std::cout << "chid: " << chid << std::endl;
+			if ((*erIt).active()){
+				// the upper channel is the BLR one
+				if((chid < 12) || (chid >= 24 && chid < 36)){
+					pmts.push_back(*erIt);
+				}else{
+					(*erIt).setChID(channelsRelationIndia[chid]);
+					blrs.push_back(*erIt);
+				}
+			}
 			++erIt;
 		}
 	}
@@ -1376,6 +1406,7 @@ void next::RawDataInput::writeEvent(){
 	auto date_header = (*headOut_).rbegin();
 	unsigned int event_number = date_header->NbInRun();
 	run_ = date_header->RunNb();
+	printf("pmts: %d, blrs: %d\n", pmts.size(), blrs.size());
 
 	_writer->Write(pmts, blrs, extPmt, *sipmDgts_, eventTime_, event_number, run_);
 }

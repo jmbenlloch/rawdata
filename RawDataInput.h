@@ -106,7 +106,7 @@ private:
   int16_t * payloadSipmPtr[20]; //Store pointers to the payload
   //To aid search of SiPM digits
   int sipmPosition[1792]; //Num FEBs * 64
-  int pmtPosition[32];
+  int pmtPosition[48];
 
   //Relation between real channels & BLR ones
   const std::vector<int> channelsRelation {2,3,0,1, 6,7,4,5, 10,11,8,9, 14,15,12,13, 18,19,16,17, 22,23,20,21, 26,27,24,25, 30,31,28,29};
@@ -139,6 +139,8 @@ private:
   std::shared_ptr<spdlog::logger> _log;
 
   next::HDF5Writer * _writer;
+
+  int fwVersion;
 
 };
 

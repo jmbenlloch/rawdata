@@ -28,6 +28,7 @@ namespace next {
 	void readEventID(int16_t* &ptr);
 	void readEventConf(int16_t* &ptr);
 	void readFecID(int16_t* &ptr);
+	void readIndiaFecID(int16_t* &ptr);
 	void readCTandFTh(int16_t* &ptr);
 	void readFTl(int16_t* &ptr);
 	void readHotelBaselines(int16_t* &ptr);
