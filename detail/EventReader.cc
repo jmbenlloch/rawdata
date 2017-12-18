@@ -288,15 +288,17 @@ void next::EventReader::ReadCommonHeader(int16_t* &ptr){
 		readWordCount(ptr);
 		readEventID(ptr);
 		readEventConf(ptr);
-		if(fBaseline){
-			if(fFWVersion == 8){
+		if(fFWVersion == 8){
+			if(fBaseline){
 				readHotelBaselines(ptr);
-				readFecID(ptr);
 			}
-			if(fFWVersion == 9){
+			readFecID(ptr);
+		}
+		if(fFWVersion == 9){
+			if(fBaseline){
 				readIndiaBaselines(ptr);
-				readIndiaFecID(ptr);
 			}
+			readIndiaFecID(ptr);
 		}
 		readCTandFTh(ptr);
 		readFTl(ptr);
