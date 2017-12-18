@@ -62,10 +62,10 @@ TEST_CASE("Test PMT elecID", "[pmt_elecid]") {
 	//and FECs 10-11 for 24-47
 	version = 9;
 	for(int ch=0; ch<12; ch++){
-		REQUIRE(computePmtElecID( 2, ch, version) == ch);
-		REQUIRE(computePmtElecID( 3, ch, version) == ch+12);
-		REQUIRE(computePmtElecID(10, ch, version) == ch+24);
-		REQUIRE(computePmtElecID(11, ch, version) == ch+36);
+		REQUIRE(computePmtElecID( 2, ch, version) == 2*ch);
+		REQUIRE(computePmtElecID( 3, ch, version) == 2*ch+1);
+		REQUIRE(computePmtElecID(10, ch, version) == 24 + 2*ch);
+		REQUIRE(computePmtElecID(11, ch, version) == 24 + 2*ch+1);
 	}
 }
 
