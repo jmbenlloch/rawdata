@@ -403,7 +403,7 @@ bool next::RawDataInput::ReadDATEEvent()
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a SIPM FEC");
 				}
-//				ReadHotelSipm(payload_flip, size);
+				ReadHotelSipm(payload_flip, size);
 			}
 		}
 
@@ -1043,6 +1043,10 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 				if (time < 1 || ZeroSuppression){
 					feb_chmask.emplace(FEBId, std::vector<int>());
 					sipmChannelMask(payload_ptr, feb_chmask[FEBId], FEBId);
+					setActiveSipms(&(feb_chmask[FEBId]), &*sipmDgts_, sipmPosition);
+//					for  (int s=0; s<feb_chmask[FEBId].size(); s++){
+//						std::cout << "sipm ch: " << feb_chmask[FEBId][s] << std::endl;
+//					}
 				}
 
 				decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
@@ -1055,12 +1059,20 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 }
 
 
+void setActiveSipms(std::vector<int> * channelMaskVec, next::DigitCollection * sipms, int * positions){
+	for(unsigned int i=0; i < channelMaskVec->size(); i++){
+		auto dgt = sipms->begin() + positions[(*channelMaskVec)[i]];
+		dgt->setActive(true);
+		std::cout << "active sipm ch pos: " << positions[(*channelMaskVec)[i]] << std::endl;
+		std::cout << "active sipm ch    : " << (*channelMaskVec)[i] << std::endl;
+	}
+}
+
 void setActivePmts(std::vector<int> * channelMaskVec, next::DigitCollection * pmts, int * positions){
 	for(unsigned int i=0; i < channelMaskVec->size(); i++){
 //		std::cout << "mask: " << (*channelMaskVec)[i] << std::endl;
 		auto dgt = pmts->begin() + positions[(*channelMaskVec)[i]];
 		dgt->setActive(true);
-
 	}
 }
 
