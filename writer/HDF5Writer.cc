@@ -59,10 +59,17 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 	//Get number of sensors
 	int total_pmts  = _sensors.getNumberOfPmts();
+	int total_blrs  = _sensors.getNumberOfPmts();
 	int total_sipms = _sensors.getNumberOfSipms();
 	hsize_t npmt   = pmts.size();
 	hsize_t nblr   = blrs.size();
 	hsize_t nsipm = sipms.size();
+
+	if(_nodb){
+		total_pmts = npmt;
+		total_blrs = nblr;
+		total_sipms = nsipm;
+	}
 
 	std::cout << npmt << ", " << nblr << ", " << nsipm << std::endl;
 
@@ -130,12 +137,19 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 	//Need to sort all digits
 	std::vector<next::Digit*> sorted_pmts(total_pmts);
-	std::vector<next::Digit*> sorted_blrs(total_pmts);
-	sortPmts(sorted_pmts, pmts);
-	sortPmts(sorted_blrs, blrs);
+	std::vector<next::Digit*> sorted_blrs(total_blrs);
+	if(_nodb){
+		std::cout << "sort PMTs" << std::endl;
+		sortPmtsNoDB(sorted_pmts, pmts);
+		std::cout << "sort BLRs" << std::endl;
+		sortPmtsNoDB(sorted_blrs, blrs);
+	}else{
+		sortPmts(sorted_pmts, pmts);
+		sortPmts(sorted_blrs, blrs);
+	}
 
-	std::vector<next::Digit*> sorted_sipms(total_sipms);
-	sortSipms(sorted_sipms, sipms);
+//	std::vector<next::Digit*> sorted_sipms(total_sipms);
+//	sortSipms(sorted_sipms, sipms);
 
 	//Write waveforms
 	//TODO ZS
@@ -145,9 +159,9 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	if (hasBlrs){
 		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize, _pmtblr);
 	}
-	if (hasSipms){
-		StoreSipmWaveforms(sorted_sipms, total_sipms, sipmDatasize, _sipmrd);
-	}
+//	if (hasSipms){
+//		StoreSipmWaveforms(sorted_sipms, total_sipms, sipmDatasize, _sipmrd);
+//	}
 
 	if(extPmt.size() > 0){
 		short int *extPmtdata = new short int[extPmtDatasize];
@@ -178,6 +192,28 @@ void next::HDF5Writer::sortPmts(std::vector<next::Digit*> &sorted_sensors,
 	}
 }
 
+bool compareDigitsID (next::Digit * d1, next::Digit * d2){
+	return d1->chID() < d2->chID();
+}
+
+void next::HDF5Writer::sortPmtsNoDB(std::vector<next::Digit*> &sorted_sensors,
+		DigitCollection &sensors){
+	for(unsigned int i=0; i<sensors.size(); i++){
+		sorted_sensors[i] = &(sensors[i]);
+	}
+
+	for(unsigned int i=0; i<sorted_sensors.size(); i++){
+		std::cout << "pre-sorted pmt: " << sorted_sensors[i]->chID() << ", " << sorted_sensors[i]->waveformNew()[0] << std::endl;
+	}
+
+	// Sort them according to ElecID
+	std::sort(sorted_sensors.begin(), sorted_sensors.end(), compareDigitsID);
+
+	for(unsigned int i=0; i<sorted_sensors.size(); i++){
+		std::cout << "sorted pmt: " << sorted_sensors[i]->chID() << ", " << sorted_sensors[i]->waveformNew()[0] << ", " << sorted_sensors[i]->waveformNew()[1] << std::endl;
+	}
+}
+
 void next::HDF5Writer::sortSipms(std::vector<next::Digit*> &sorted_sensors,
 		DigitCollection &sensors){
 	std::fill(sorted_sensors.begin(), sorted_sensors.end(), (next::Digit*) 0);
@@ -204,6 +240,7 @@ void next::HDF5Writer::StorePmtWaveforms(std::vector<next::Digit*> sensors,
 			auto wf = sensors[sid]->waveformNew();
 			for(unsigned int samp=0; samp<sensors[sid]->nSamples(); samp++) {
 				data[index] = (short int) wf[samp];
+	//			std::cout << "sid: " << sid << ", data: " << wf[samp] << std::endl;
 				index++;
 			}
 		}
