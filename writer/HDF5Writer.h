@@ -38,6 +38,11 @@ namespace next{
 	bool _nodb;
 	std::vector<int> _pmt_elecids;
 	std::vector<int> _blr_elecids;
+	std::vector<int> _sipm_elecids;
+
+	bool _hasPmts;
+	bool _hasBlrs;
+	bool _hasSipms;
 
 	//! Group for Run info
 	size_t _rinfoG;
@@ -75,8 +80,10 @@ namespace next{
 
 	void sortPmts(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);
 	void sortPmtsNoDB(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);
+	void sortSipmsNoDB(std::vector<next::Digit*> &sorted_sensors, std::vector<next::Digit*> &sensors);
 	void sortSipms(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);
 	void save_elecids(std::vector<int>* elecids, std::vector<next::Digit*> &sorted_sensors);
+	void select_active_sensors(std::vector<next::Digit*> * active_sensors, DigitCollection& sensors);
 
     //! open file
     void Open(std::string filename);

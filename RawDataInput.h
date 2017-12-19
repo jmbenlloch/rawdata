@@ -156,7 +156,6 @@ void freeWaveformMemory(next::DigitCollection * sensors);
 
 void createWaveforms(next::DigitCollection * sensors, int bufferSamples);
 
-void setActivePmts(std::vector<int> * channelMaskVec, next::DigitCollection * pmts, int *positions);
-void setActiveSipms(std::vector<int> * channelMaskVec, next::DigitCollection * pmts, int *positions);
+void setActiveSensors(std::vector<int> * channelMaskVec, next::DigitCollection * pmts, int *positions);
 
 void writePmtPedestals(next::EventReader * reader, next::DigitCollection * pmts, std::vector<int> * elecIDs, int * positions);

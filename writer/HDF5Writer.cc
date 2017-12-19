@@ -65,28 +65,31 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	hsize_t nblr   = blrs.size();
 	hsize_t nsipm = sipms.size();
 
+	std::vector<next::Digit*> active_sipms;
 	if(_nodb){
 		total_pmts = npmt;
 		total_blrs = nblr;
-		total_sipms = nsipm;
+
+		select_active_sensors(&active_sipms, sipms);
+		total_sipms = active_sipms.size();
 	}
 
 	std::cout << npmt << ", " << nblr << ", " << nsipm << std::endl;
 
-	bool hasPmts  = npmt > 0;
-	bool hasBlrs  = nblr > 0;
-	bool hasSipms = nsipm > 0;
+	_hasPmts  = npmt > 0;
+	_hasBlrs  = nblr > 0;
+	_hasSipms = nsipm > 0;
 
 	//Waveform size
 	hsize_t pmtDatasize  = 0;
 	hsize_t sipmDatasize = 0;
 	hsize_t extPmtDatasize = 0;
 
-	if (hasPmts){
-		pmtDatasize   = pmts[0].nSamples();
+	if (_hasPmts){
+		pmtDatasize    = pmts[0].nSamples();
 	}
-	if (hasSipms){
-		sipmDatasize = sipms[0].nSamples();
+	if (_hasSipms){
+		sipmDatasize   = sipms[0].nSamples();
 	}
 	if(extPmt.size() > 0){
 		extPmtDatasize = extPmt[0].nSamples();
@@ -110,19 +113,19 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		hid_t group = createGroup(_file, groupName);
 
 		//Create pmt array
-		if (hasPmts){
+		if (_hasPmts){
 			std::string pmt_name = std::string("pmtrwf");
 			_pmtrd = createWaveforms(group, pmt_name, total_pmts, pmtDatasize);
 		}
 
 		//Create blr array
-		if (hasBlrs){
+		if (_hasBlrs){
 			std::string blr_name = std::string("pmtblr");
 			_pmtblr = createWaveforms(group, blr_name, total_pmts, pmtDatasize);
 		}
 
 		//Create sipms array
-		if (hasSipms){
+		if (_hasSipms){
 			std::string sipm_name = std::string("sipmrwf");
 			_sipmrd = createWaveforms(group, sipm_name, total_sipms, sipmDatasize);
 		}
@@ -138,11 +141,14 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	//Need to sort all digits
 	std::vector<next::Digit*> sorted_pmts(total_pmts);
 	std::vector<next::Digit*> sorted_blrs(total_blrs);
+	std::vector<next::Digit*> sorted_sipms(total_sipms);
 	if(_nodb){
 		std::cout << "sort PMTs" << std::endl;
 		sortPmtsNoDB(sorted_pmts, pmts);
 		std::cout << "sort BLRs" << std::endl;
 		sortPmtsNoDB(sorted_blrs, blrs);
+		std::cout << "sort SIPMs" << std::endl;
+		sortSipmsNoDB(sorted_sipms, active_sipms);
 
 		save_elecids(&_pmt_elecids, sorted_pmts);
 		std::cout << "pmts size: " << _pmt_elecids.size() << std::endl;
@@ -154,23 +160,28 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		for(int i=0; i<_blr_elecids.size(); i++){
 			std::cout << "blrs: " << _blr_elecids[i] << std::endl;
 		}
+
+		save_elecids(&_sipm_elecids, sorted_sipms);
+		std::cout << "sipms size: " << _sipm_elecids.size() << std::endl;
+		for(int i=0; i<_sipm_elecids.size(); i++){
+			std::cout << "sipms: " << _sipm_elecids[i] << std::endl;
+		}
 	}else{
 		sortPmts(sorted_pmts, pmts);
 		sortPmts(sorted_blrs, blrs);
+		sortSipms(sorted_sipms, sipms);
 	}
 
-	std::vector<next::Digit*> sorted_sipms(total_sipms);
-	sortSipms(sorted_sipms, sipms);
 
 	//Write waveforms
 	//TODO ZS
-	if (hasPmts){
+	if (_hasPmts){
 		StorePmtWaveforms(sorted_pmts, total_pmts, pmtDatasize, _pmtrd);
 	}
-	if (hasBlrs){
+	if (_hasBlrs){
 		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize, _pmtblr);
 	}
-	if (hasSipms){
+	if (_hasSipms){
 		StoreSipmWaveforms(sorted_sipms, total_sipms, sipmDatasize, _sipmrd);
 	}
 
@@ -189,6 +200,17 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	}
 
 	_ievt++;
+}
+
+void next::HDF5Writer::select_active_sensors(std::vector<next::Digit*> * active_sensors,
+		DigitCollection& sensors){
+	active_sensors->reserve(sensors.size());
+	for(int i=0; i<sensors.size(); i++){
+		if (sensors[i].active()){
+			std::cout << "write sipms: " << sensors[i].chID() << std::endl;
+			active_sensors->push_back(&(sensors[i]));
+		}
+	}
 }
 
 void next::HDF5Writer::save_elecids(std::vector<int> * elecids,
@@ -234,6 +256,24 @@ void next::HDF5Writer::sortPmtsNoDB(std::vector<next::Digit*> &sorted_sensors,
 
 	for(unsigned int i=0; i<sorted_sensors.size(); i++){
 		std::cout << "sorted pmt: " << sorted_sensors[i]->chID() << ", " << sorted_sensors[i]->waveformNew()[0] << ", " << sorted_sensors[i]->waveformNew()[1] << std::endl;
+	}
+}
+
+void next::HDF5Writer::sortSipmsNoDB(std::vector<next::Digit*> &sorted_sensors,
+		std::vector<next::Digit*> &sensors){
+	for(unsigned int i=0; i<sensors.size(); i++){
+		sorted_sensors[i] = sensors[i];
+	}
+
+	for(unsigned int i=0; i<sorted_sensors.size(); i++){
+		std::cout << "pre-sorted sipm: " << sorted_sensors[i]->chID() << ", " << sorted_sensors[i]->waveformNew()[0] << std::endl;
+	}
+
+	// Sort them according to ElecID
+	std::sort(sorted_sensors.begin(), sorted_sensors.end(), compareDigitsID);
+
+	for(unsigned int i=0; i<sorted_sensors.size(); i++){
+		std::cout << "sorted sipms: " << sorted_sensors[i]->chID() << ", " << sorted_sensors[i]->waveformNew()[0] << ", " << sorted_sensors[i]->waveformNew()[1] << std::endl;
 	}
 }
 
@@ -314,9 +354,19 @@ void next::HDF5Writer::WriteRunInfo(){
 	std::string pmt_table_name  = std::string("DataPMT");
 	std::string blr_table_name  = std::string("DataBLR");
 	std::string sipm_table_name = std::string("DataSiPM");
-	hsize_t pmtsTable  = createTable(sensorsG, pmt_table_name,  memtype);
-	hsize_t blrsTable  = createTable(sensorsG, blr_table_name,  memtype);
-	hsize_t sipmsTable = createTable(sensorsG, sipm_table_name, memtype);
+	hsize_t pmtsTable;
+	hsize_t blrsTable;
+	hsize_t sipmsTable;
+
+	if (_hasPmts){
+		pmtsTable = createTable(sensorsG, pmt_table_name,  memtype);
+	}
+	if (_hasBlrs){
+		blrsTable  = createTable(sensorsG, blr_table_name,  memtype);
+	}
+	if (_hasSipms){
+		sipmsTable = createTable(sensorsG, sipm_table_name, memtype);
+	}
 
 	int npmts  = _sensors.getNumberOfPmts();
 	int nsipms = _sensors.getNumberOfSipms();
@@ -369,6 +419,13 @@ void next::HDF5Writer::WriteRunInfo(){
 			sensor.channel  = _blr_elecids[i];
 			sensor.sensorID = -1;
 			writeSensor(&sensor, blrsTable, memtype, i);
+		}
+
+		//Write Sipms
+		for(int i=0; i<_sipm_elecids.size(); i++){
+			sensor.channel  = _sipm_elecids[i];
+			sensor.sensorID = -1;
+			writeSensor(&sensor, sipmsTable, memtype, i);
 		}
 	}
 }

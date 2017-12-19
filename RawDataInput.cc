@@ -612,7 +612,7 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 
 	//Create digits and waveforms for active channels
 	CreatePMTs(&*pmtDgts_, pmtPosition, &(fec_chmask[fFecId]), BufferSamples, ZeroSuppression);
-	setActivePmts(&(fec_chmask[fFecId]), &*pmtDgts_, pmtPosition);
+	setActiveSensors(&(fec_chmask[fFecId]), &*pmtDgts_, pmtPosition);
 
 
 	for(unsigned int i=0; i<pmtDgts_->size(); i++){
@@ -740,7 +740,7 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 
 	//Create digits and waveforms for active channels
 	CreatePMTs(&*pmtDgts_, pmtPosition, &(fec_chmask[fFecId]), BufferSamples, ZeroSuppression);
-	setActivePmts(&(fec_chmask[fFecId]), &*pmtDgts_, pmtPosition);
+	setActiveSensors(&(fec_chmask[fFecId]), &*pmtDgts_, pmtPosition);
 
 
 	for(unsigned int i=0; i<pmtDgts_->size(); i++){
@@ -1043,10 +1043,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 				if (time < 1 || ZeroSuppression){
 					feb_chmask.emplace(FEBId, std::vector<int>());
 					sipmChannelMask(payload_ptr, feb_chmask[FEBId], FEBId);
-					setActiveSipms(&(feb_chmask[FEBId]), &*sipmDgts_, sipmPosition);
-//					for  (int s=0; s<feb_chmask[FEBId].size(); s++){
-//						std::cout << "sipm ch: " << feb_chmask[FEBId][s] << std::endl;
-//					}
+					setActiveSensors(&(feb_chmask[FEBId]), &*sipmDgts_, sipmPosition);
 				}
 
 				decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
@@ -1058,17 +1055,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 	}
 }
 
-
-void setActiveSipms(std::vector<int> * channelMaskVec, next::DigitCollection * sipms, int * positions){
-	for(unsigned int i=0; i < channelMaskVec->size(); i++){
-		auto dgt = sipms->begin() + positions[(*channelMaskVec)[i]];
-		dgt->setActive(true);
-		std::cout << "active sipm ch pos: " << positions[(*channelMaskVec)[i]] << std::endl;
-		std::cout << "active sipm ch    : " << (*channelMaskVec)[i] << std::endl;
-	}
-}
-
-void setActivePmts(std::vector<int> * channelMaskVec, next::DigitCollection * pmts, int * positions){
+void setActiveSensors(std::vector<int> * channelMaskVec, next::DigitCollection * pmts, int * positions){
 	for(unsigned int i=0; i < channelMaskVec->size(); i++){
 //		std::cout << "mask: " << (*channelMaskVec)[i] << std::endl;
 		auto dgt = pmts->begin() + positions[(*channelMaskVec)[i]];
