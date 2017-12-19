@@ -74,8 +74,6 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		total_sipms = active_sipms.size();
 	}
 
-	std::cout << npmt << ", " << nblr << ", " << nsipm << std::endl;
-
 	_hasPmts  = npmt > 0;
 	_hasBlrs  = nblr > 0;
 	_hasSipms = nsipm > 0;
@@ -143,29 +141,13 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	std::vector<next::Digit*> sorted_blrs(total_blrs);
 	std::vector<next::Digit*> sorted_sipms(total_sipms);
 	if(_nodb){
-		std::cout << "sort PMTs" << std::endl;
 		sortPmtsNoDB(sorted_pmts, pmts);
-		std::cout << "sort BLRs" << std::endl;
 		sortPmtsNoDB(sorted_blrs, blrs);
-		std::cout << "sort SIPMs" << std::endl;
 		sortSipmsNoDB(sorted_sipms, active_sipms);
 
 		save_elecids(&_pmt_elecids, sorted_pmts);
-		std::cout << "pmts size: " << _pmt_elecids.size() << std::endl;
-		for(int i=0; i<_pmt_elecids.size(); i++){
-			std::cout << "pmts: " << _pmt_elecids[i] << std::endl;
-		}
 		save_elecids(&_blr_elecids, sorted_blrs);
-		std::cout << "blrs size: " << _blr_elecids.size() << std::endl;
-		for(int i=0; i<_blr_elecids.size(); i++){
-			std::cout << "blrs: " << _blr_elecids[i] << std::endl;
-		}
-
 		save_elecids(&_sipm_elecids, sorted_sipms);
-		std::cout << "sipms size: " << _sipm_elecids.size() << std::endl;
-		for(int i=0; i<_sipm_elecids.size(); i++){
-			std::cout << "sipms: " << _sipm_elecids[i] << std::endl;
-		}
 	}else{
 		sortPmts(sorted_pmts, pmts);
 		sortPmts(sorted_blrs, blrs);
@@ -207,7 +189,6 @@ void next::HDF5Writer::select_active_sensors(std::vector<next::Digit*> * active_
 	active_sensors->reserve(sensors.size());
 	for(int i=0; i<sensors.size(); i++){
 		if (sensors[i].active()){
-			std::cout << "write sipms: " << sensors[i].chID() << std::endl;
 			active_sensors->push_back(&(sensors[i]));
 		}
 	}
@@ -220,7 +201,6 @@ void next::HDF5Writer::save_elecids(std::vector<int> * elecids,
 		for(unsigned int i=0; i<sorted_sensors.size(); i++){
 			//(*elecids)[i] = sorted_sensors[i]->chID();
 			elecids->push_back(sorted_sensors[i]->chID());
-			std::cout << "elecid: " << elecids->at(i) << std::endl;
 		}
 	}
 }
@@ -246,17 +226,8 @@ void next::HDF5Writer::sortPmtsNoDB(std::vector<next::Digit*> &sorted_sensors,
 	for(unsigned int i=0; i<sensors.size(); i++){
 		sorted_sensors[i] = &(sensors[i]);
 	}
-
-	for(unsigned int i=0; i<sorted_sensors.size(); i++){
-		std::cout << "pre-sorted pmt: " << sorted_sensors[i]->chID() << ", " << sorted_sensors[i]->waveformNew()[0] << std::endl;
-	}
-
 	// Sort them according to ElecID
 	std::sort(sorted_sensors.begin(), sorted_sensors.end(), compareDigitsID);
-
-	for(unsigned int i=0; i<sorted_sensors.size(); i++){
-		std::cout << "sorted pmt: " << sorted_sensors[i]->chID() << ", " << sorted_sensors[i]->waveformNew()[0] << ", " << sorted_sensors[i]->waveformNew()[1] << std::endl;
-	}
 }
 
 void next::HDF5Writer::sortSipmsNoDB(std::vector<next::Digit*> &sorted_sensors,
@@ -264,17 +235,8 @@ void next::HDF5Writer::sortSipmsNoDB(std::vector<next::Digit*> &sorted_sensors,
 	for(unsigned int i=0; i<sensors.size(); i++){
 		sorted_sensors[i] = sensors[i];
 	}
-
-	for(unsigned int i=0; i<sorted_sensors.size(); i++){
-		std::cout << "pre-sorted sipm: " << sorted_sensors[i]->chID() << ", " << sorted_sensors[i]->waveformNew()[0] << std::endl;
-	}
-
 	// Sort them according to ElecID
 	std::sort(sorted_sensors.begin(), sorted_sensors.end(), compareDigitsID);
-
-	for(unsigned int i=0; i<sorted_sensors.size(); i++){
-		std::cout << "sorted sipms: " << sorted_sensors[i]->chID() << ", " << sorted_sensors[i]->waveformNew()[0] << ", " << sorted_sensors[i]->waveformNew()[1] << std::endl;
-	}
 }
 
 void next::HDF5Writer::sortSipms(std::vector<next::Digit*> &sorted_sensors,
@@ -303,7 +265,6 @@ void next::HDF5Writer::StorePmtWaveforms(std::vector<next::Digit*> sensors,
 			auto wf = sensors[sid]->waveformNew();
 			for(unsigned int samp=0; samp<sensors[sid]->nSamples(); samp++) {
 				data[index] = (short int) wf[samp];
-	//			std::cout << "sid: " << sid << ", data: " << wf[samp] << std::endl;
 				index++;
 			}
 		}

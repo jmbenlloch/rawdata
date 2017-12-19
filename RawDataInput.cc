@@ -804,9 +804,6 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 			if(!ZeroSuppression){
 				computeNextFThm(&nextFT, &nextFThm, eventReader_);
 				if(FT != (nextFThm & 0x0FFFF)){
-					for(int i=0; i<100; i++){
-						printf("payload[%d] = 0x%04x\n", -50+i, *(buffer-50 + i));
-					}
 					if( verbosity_ >= 2 ){
 						_log->debug("nextFThm != FT: 0x{:04x}, 0x{:04x}", (nextFThm&0x0ffff), FT);
 					}
@@ -1339,11 +1336,6 @@ void next::RawDataInput::writeEvent(){
 	blrs.reserve(32);
 	sipms.reserve(1792);
 
-
-	for (int i=0; i< pmtDgts_->size(); i++){
-		std::cout << (*pmtDgts_)[i].waveformNew()[0] << ", " << (*pmtDgts_)[i].waveformNew()[1] << std::endl;
-	}
-
 	auto erIt = pmtDgts_->begin();
 	while ( erIt != pmtDgts_->end() ){
 		if (fwVersion == 8){
@@ -1388,7 +1380,6 @@ void next::RawDataInput::writeEvent(){
 
 		if(fwVersion == 9){
 			int chid = (*erIt).chID();
-			std::cout << "chid: " << chid << std::endl;
 			if ((*erIt).active()){
 				// the upper channel is the BLR one
 				if((chid < 12) || (chid >= 24 && chid < 36)){
@@ -1405,7 +1396,6 @@ void next::RawDataInput::writeEvent(){
 	auto date_header = (*headOut_).rbegin();
 	unsigned int event_number = date_header->NbInRun();
 	run_ = date_header->RunNb();
-	printf("pmts: %d, blrs: %d\n", pmts.size(), blrs.size());
 
 	_writer->Write(pmts, blrs, extPmt, *sipmDgts_, eventTime_, event_number, run_);
 }
