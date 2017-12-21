@@ -62,7 +62,7 @@ namespace next
 			bool active();
 			void setActive(bool active);
 
-			unsigned short int * waveformNew();
+			unsigned short int * waveform();
 			void setWaveformNew(unsigned short int * waveform);
 
 		private:
@@ -83,7 +83,7 @@ namespace next
 
 			//    unsigned int resamplingFactor_; ///< Resampling from raw (necessary?)
 
-			unsigned short int * waveformNew_; ///< The charge distribution of the digit.
+			unsigned short int * waveform_; ///< The charge distribution of the digit.
 
 			bool active_;
 
@@ -114,8 +114,8 @@ namespace next
 	inline bool Digit::isFEBFailureBit() const { return febFailureBit_; }
 	inline void Digit::setFEBFailureBit(bool s) { febFailureBit_ = s; }
 
-	inline unsigned short int * Digit::waveformNew() { return waveformNew_; }
-	inline void Digit::setWaveformNew(unsigned short int * waveform) { waveformNew_ = waveform; }
+	inline unsigned short int * Digit::waveform() { return waveform_; }
+	inline void Digit::setWaveformNew(unsigned short int * waveform) { waveform_ = waveform; }
 
 	inline bool Digit::active() {return active_;}
 	inline void Digit::setActive(bool active) {active_ = active; }

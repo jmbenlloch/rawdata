@@ -365,13 +365,13 @@ bool next::RawDataInput::ReadDATEEvent()
 				}
 //				for(unsigned int i=0; i<pmtDgts_->size(); i++){
 //					if((*pmtDgts_)[i].active()){
-//						std::cout << (*pmtDgts_)[i].nSamples() << " before read pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
+//						std::cout << (*pmtDgts_)[i].nSamples() << " before read pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveform()[0] << std::endl;
 //					}
 //				}
 				ReadHotelPmt(payload_flip,size);
 //				for(unsigned int i=0; i<pmtDgts_->size(); i++){
 //					if((*pmtDgts_)[i].active()){
-//						std::cout << (*pmtDgts_)[i].nSamples() << "after read pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
+//						std::cout << (*pmtDgts_)[i].nSamples() << "after read pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveform()[0] << std::endl;
 //					}
 //				}
 			}else if (FECtype==2){
@@ -689,7 +689,7 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 
 //	for(unsigned int i=0; i<pmtDgts_->size(); i++){
 //		if((*pmtDgts_)[i].active()){
-//			std::cout << (*pmtDgts_)[i].nSamples() << " hotel pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
+//			std::cout << (*pmtDgts_)[i].nSamples() << " hotel pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveform()[0] << std::endl;
 //		}
 //	}
 }
@@ -817,7 +817,7 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 
 //	for(unsigned int i=0; i<pmtDgts_->size(); i++){
 //		if((*pmtDgts_)[i].active()){
-//			std::cout << (*pmtDgts_)[i].nSamples() << " hotel pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveformNew()[0] << std::endl;
+//			std::cout << (*pmtDgts_)[i].nSamples() << " hotel pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveform()[0] << std::endl;
 //		}
 //	}
 }
@@ -1199,7 +1199,7 @@ void next::RawDataInput::decodeCharge(int16_t* &ptr, next::DigitCollection &digi
 
 		//Save data in Digits
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
-		dgt->waveformNew()[time] = Charge;
+		dgt->waveform()[time] = Charge;
 
 		// Channel 3 does not add new words
 		// 3 words (0123,4567,89AB) give 4 charges (012,345,678,9AB)
@@ -1256,7 +1256,7 @@ void next::RawDataInput::decodeChargePmtZS(int16_t* &ptr, next::DigitCollection 
 
 		//Save data in Digits
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
-		dgt->waveformNew()[time] = Charge;
+		dgt->waveform()[time] = Charge;
 	}
 	ptr++;
 }
@@ -1402,6 +1402,6 @@ void next::RawDataInput::writeEvent(){
 
 void freeWaveformMemory(next::DigitCollection * sensors){
 	for(unsigned int i=0; i< sensors->size(); i++){
-		free((*sensors)[i].waveformNew());
+		free((*sensors)[i].waveform());
 	}
 }

@@ -12,7 +12,7 @@ next::Digit::Digit() :
 	pedestal_(0.),
 	saturated_(false),
 	febFailureBit_(false),
-	waveformNew_(0),
+	waveform_(0),
 	active_(false)
 {
 }
@@ -24,7 +24,7 @@ next::Digit::Digit(unsigned int chID, digitType dtype, chanType chtype) :
 	pedestal_(0.),
 	saturated_(false),
 	febFailureBit_(false),
-	waveformNew_(0),
+	waveform_(0),
 	active_(false)
 {
 }
