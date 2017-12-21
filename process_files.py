@@ -20,6 +20,10 @@ parser.add_argument('-e', '--events',
                     help='number of events to process',
                     required=True,
                     action='store')
+parser.add_argument('-t', '--type',
+                    help='type of waveforms to show',
+                    required=True,
+                    action='store')
 results = parser.parse_args()
 
 data = {"file_in" : results.file,
@@ -56,16 +60,25 @@ def plot_waveform(waveforms, sensors):
             plt.ylim(ymin, ymax)
             plt.title(title)
             plt.show()
-            _ = raw_input("Press [enter] to continue.")
+            _ = input("Press [enter] to continue.")
             plt.clf()
 
-def plot_file(h5file):
+def plot_file(h5file, options):
     h5in = tb.open_file(h5file)
-    if 'pmtrwf' in h5in.root.RD:
-        plot_waveform(h5in.root.RD.pmtrwf, h5in.root.Sensors.DataPMT[:])
-    if 'pmtblr' in h5in.root.RD:
-        plot_waveform(h5in.root.RD.pmtblr, h5in.root.Sensors.DataBLR[:])
-    if 'sipmrwf' in h5in.root.RD:
-        plot_waveform(h5in.root.RD.sipmrwf, h5in.root.Sensors.DataSiPM[:])
+    if options == 'pmt' or options == 'all':
+        if 'pmtrwf' in h5in.root.RD:
+            plot_waveform(h5in.root.RD.pmtrwf, h5in.root.Sensors.DataPMT[:])
+        else:
+            print("No pmts in the file")
+    if options == 'blr' or options == 'all':
+        if 'pmtblr' in h5in.root.RD:
+            plot_waveform(h5in.root.RD.pmtblr, h5in.root.Sensors.DataBLR[:])
+        else:
+            print("No blrs in the file")
+    if options == 'sipm' or options == 'all':
+        if 'sipmrwf' in h5in.root.RD:
+            plot_waveform(h5in.root.RD.sipmrwf, h5in.root.Sensors.DataSiPM[:])
+        else:
+            print("No sipms in the file")
 
-plot_file(results.output)
+plot_file(results.output, results.type)

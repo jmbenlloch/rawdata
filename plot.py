@@ -20,7 +20,7 @@ def plot_waveform(waveforms, sensors):
             plt.ylim(ymin, ymax)
             plt.title(title)
             plt.show()
-            _ = raw_input("Press [enter] to continue.")
+            _ = input("Press [enter] to continue.")
             plt.clf()
 
 def plot_file(h5file):
