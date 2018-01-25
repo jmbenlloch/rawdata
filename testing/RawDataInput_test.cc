@@ -243,7 +243,7 @@ TEST_CASE("Decode charge", "[decode_charge]") {
 			for(unsigned s=0; s<nsensors; s++){
 				//printf("s: %d\n", s);
 				REQUIRE(digits[s].nSamples() == 1);
-				REQUIRE(digits[s].waveformNew()[0] == 0xFFF);
+				REQUIRE(digits[s].waveform()[0] == 0xFFF);
 			}
 
 			// Clean up
@@ -317,7 +317,7 @@ TEST_CASE("Decode charge", "[decode_charge]") {
 				REQUIRE(digits[s].nSamples() == 1);
 				//Only one sensor is 0xFFF, the rest of them are 0x000
 				int value = (s == sensor) ? 0xFFF : 0x000;
-				REQUIRE(digits[s].waveformNew()[0] == value);
+				REQUIRE(digits[s].waveform()[0] == value);
 			}
 
 			// Clean up
@@ -574,7 +574,7 @@ TEST_CASE("Decode PMT ZS charge", "[pmtzs_charge]") {
 		for(unsigned s=0; s<nsensors; s++){
 			//			printf("s: %d\n", s);
 			REQUIRE(digits[s].nSamples() == 1);
-			REQUIRE(digits[s].waveformNew()[0] == 0xFFF);
+			REQUIRE(digits[s].waveform()[0] == 0xFFF);
 		}
 
 		// Clean up
@@ -636,7 +636,7 @@ TEST_CASE("Test create PMTs", "[create_pmts]") {
 
 		//Check waveforms are initialized to zero
 		for(unsigned int samp=0; samp<bufferSamples; samp++){
-			REQUIRE(pmts[ch].waveformNew()[samp] == 0);
+			REQUIRE(pmts[ch].waveform()[samp] == 0);
 		}
 	}
 }

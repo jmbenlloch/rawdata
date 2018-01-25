@@ -21,6 +21,9 @@
 #include "spdlog/spdlog.h"
 #endif
 
+#define MAX_PMTs 24
+#define MAX_SIPMs 1792
+
 namespace next{
 
   class HDF5Writer {
