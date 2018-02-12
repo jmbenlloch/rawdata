@@ -44,7 +44,7 @@ next::RawDataInput::RawDataInput(ReadConfig * config, HDF5Writer * writer) :
 	}
 	_writer = writer;
 
-	payloadSipm = (char*) malloc(5000000*NUM_FEC_SIPM);
+	payloadSipm = (char*) malloc(MEMSIZE*NUM_FEC_SIPM);
 }
 
 
@@ -346,7 +346,7 @@ bool next::RawDataInput::ReadDATEEvent()
 
 		//Flip words
 		int16_t * buffer_cp = (int16_t*) buffer;
-		int16_t * payload_flip = (int16_t *) malloc(5000000);
+		int16_t * payload_flip = (int16_t *) malloc(MEMSIZE);
 		int16_t * payload_flip_free = payload_flip;
 		flipWords(size, buffer_cp, payload_flip);
 
@@ -972,7 +972,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 
 	//Copy pointers to each FEC payload
 	for(int i=0;i<NUM_FEC_SIPM;i++){
-		payloadSipmPtr[i] = (int16_t *) (payloadSipm+5000000*i);
+		payloadSipmPtr[i] = (int16_t *) (payloadSipm+MEMSIZE*i);
 	}
 
 	//Copy data
@@ -1003,7 +1003,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 		//Rebuild payload from the two links
 		//TODO free && put correct size
 		//int16_t *payload_ptr = (int16_t*) malloc(size*2);
-		int16_t *payload_ptr = (int16_t*) malloc(5000000);
+		int16_t *payload_ptr = (int16_t*) malloc(MEMSIZE);
 		int16_t *mem_to_free = payload_ptr;
 		buildSipmData(size, payload_ptr, payloadsipm_ptrA, payloadsipm_ptrB);
 

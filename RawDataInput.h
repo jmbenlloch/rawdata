@@ -35,6 +35,7 @@
 #define PMTS_PER_FEC 8
 #define SIPMS_PER_FEB 64
 #define NUMBER_OF_FEBS 28
+#define MEMSIZE 5500000
 
 namespace next {
 
