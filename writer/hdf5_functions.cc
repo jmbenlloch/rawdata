@@ -141,6 +141,7 @@ void WriteWaveforms(short int * data, hid_t dataset, hsize_t nsensors,
 	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
 	H5Dwrite(dataset, H5T_NATIVE_SHORT, memspace, file_space, H5P_DEFAULT, data);
 	H5Sclose(file_space);
+	H5Sclose(memspace);
 }
 
 void WriteWaveform(short int * data, hid_t dataset, hsize_t nsamples, hsize_t evt){
@@ -162,6 +163,7 @@ void WriteWaveform(short int * data, hid_t dataset, hsize_t nsamples, hsize_t ev
 	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
 	H5Dwrite(dataset, H5T_NATIVE_SHORT, memspace, file_space, H5P_DEFAULT, data);
 	H5Sclose(file_space);
+	H5Sclose(memspace);
 }
 
 
@@ -181,6 +183,7 @@ void writeEvent(evt_t * evtData, hid_t dataset, hid_t memtype, hsize_t evt_numbe
 	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
 	H5Dwrite(dataset, memtype, memspace, file_space, H5P_DEFAULT, evtData);
 	H5Sclose(file_space);
+	H5Sclose(memspace);
 }
 
 
@@ -199,6 +202,7 @@ void writeRun(runinfo_t * runData, hid_t dataset, hid_t memtype, hsize_t evt_num
 	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
 	H5Dwrite(dataset, memtype, memspace, file_space, H5P_DEFAULT, runData);
 	H5Sclose(file_space);
+	H5Sclose(memspace);
 }
 
 void writeSensor(sensor_t * sensorData, hid_t dataset, hid_t memtype, hsize_t sensor_number){
@@ -216,4 +220,5 @@ void writeSensor(sensor_t * sensorData, hid_t dataset, hid_t memtype, hsize_t se
 	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
 	H5Dwrite(dataset, memtype, memspace, file_space, H5P_DEFAULT, sensorData);
 	H5Sclose(file_space);
+	H5Sclose(memspace);
 }

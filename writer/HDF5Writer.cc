@@ -95,7 +95,7 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 	if (_firstEvent){
 		//Load sensors data from DB
-		getSensorsFromDB(_config, _sensors, run_number, false);
+		getSensorsFromDB(_config, _sensors, run_number, true);
 
 		//Run info (to be moved away)
 		hsize_t memtype_run = createRunType();
@@ -351,35 +351,41 @@ void next::HDF5Writer::WriteRunInfo(){
 	//Write PMTs
 	if(!_nodb){
 		int sensor_count = 0;
-		for(int i=0; i<npmts; i++){
-			sensor.channel  = _sensors.sensorToElec(i);
-			sensor.sensorID = i;
-			if (sensor.channel >= 0){
-				writeSensor(&sensor, pmtsTable, memtype, sensor_count);
-				sensor_count++;
+		if (_hasPmts){
+			for(int i=0; i<npmts; i++){
+				sensor.channel  = _sensors.sensorToElec(i);
+				sensor.sensorID = i;
+				if (sensor.channel >= 0){
+					writeSensor(&sensor, pmtsTable, memtype, sensor_count);
+					sensor_count++;
+				}
 			}
 		}
 
 		//Write BLRs
 		sensor_count = 0;
-		for(int i=0; i<npmts; i++){
-			sensor.channel  = _sensors.sensorToElec(i);
-			sensor.sensorID = i;
-			if (sensor.channel >= 0){
-				writeSensor(&sensor, blrsTable, memtype, sensor_count);
-				sensor_count++;
+		if (_hasBlrs){
+			for(int i=0; i<npmts; i++){
+				sensor.channel  = _sensors.sensorToElec(i);
+				sensor.sensorID = i;
+				if (sensor.channel >= 0){
+					writeSensor(&sensor, blrsTable, memtype, sensor_count);
+					sensor_count++;
+				}
 			}
 		}
 		//Write SIPMs
 		int sensorid;
 		sensor_count = 0;
-		for(int i=0; i<nsipms; i++){
-			sensorid = PositiontoSipmID(i);
-			sensor.channel  = _sensors.sensorToElec(sensorid);
-			sensor.sensorID = sensorid;
-			if (sensor.channel >= 0){
-				writeSensor(&sensor, sipmsTable, memtype, sensor_count);
-				sensor_count++;
+		if (_hasSipms){
+			for(int i=0; i<nsipms; i++){
+				sensorid = PositiontoSipmID(i);
+				sensor.channel  = _sensors.sensorToElec(sensorid);
+				sensor.sensorID = sensorid;
+				if (sensor.channel >= 0){
+					writeSensor(&sensor, sipmsTable, memtype, sensor_count);
+					sensor_count++;
+				}
 			}
 		}
 	}else{
