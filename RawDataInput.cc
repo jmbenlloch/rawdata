@@ -35,12 +35,15 @@ next::RawDataInput::RawDataInput(ReadConfig * config, HDF5Writer * writer) :
 	eventReader_(),
 	twoFiles_(config->two_files()),
 	discard_(config->discard()),
-	externalTriggerCh_(config->extTrigger())
+	externalTriggerCh_(config->extTrigger()),
+	fileError_(0)
 {
 	fMaxSample = 65536;
 	_log = spd::stdout_color_mt("rawdata");
+	_logerr = spd::stderr_color_mt("decoder");
 	if(verbosity_ > 0){
 		_log->set_level(spd::level::debug);
+		_logerr->set_level(spd::level::debug);
 	}
 	_writer = writer;
 
@@ -101,10 +104,26 @@ int next::RawDataInput::loadNextEvent(std::FILE* file, unsigned char ** buffer){
 	return evt_number;
 }
 
+std::FILE* next::RawDataInput::openDATEFile(std::string const & filename){
+	_log->debug("Open file: {}", filename);
+	std::FILE* file = std::fopen(filename.c_str(), "rb");
+	if ( !file ){
+		_log->warn("Unable to open specified DATE file {}. Retrying in 10 seconds...", filename);
+		sleep(10);
+		file = std::fopen(filename.c_str(), "rb");
+		if ( !file ){
+			_logerr->error("Unable to open specified DATE file {}", filename);
+			fileError_ = true;
+			exit(-1);
+		}
+		_log->warn("File opened succesfully", filename);
+	}
+
+	return file;
+}
 
 void next::RawDataInput::readFile(std::string const & filename)
 {
-	_log->debug("Open file: {}", filename);
 	bool gdc2first = false;
 
 	int nevents1=0, firstEvtGDC1;
@@ -113,27 +132,16 @@ void next::RawDataInput::readFile(std::string const & filename)
 	std::FILE* file2 = NULL;
 	std::string filename2 = filename;
 
-	//TODO find out how to refactor the file openings
-	file1 = std::fopen(filename.c_str(), "rb");
-	if ( !file1 ){
-		// TODO Failure to open file: must throw FileOpenError.
-		_log->error("Unable to open specified DATE file {}", filename);
-	}
-
+	file1 = openDATEFile(filename);
 	countEvents(file1, &nevents1, &firstEvtGDC1);
 
 	if (twoFiles_){
 		filename2.replace(filename2.find("gdc1"), 4, "gdc2");
 		_log->info("Reading from files {} and {}", filename, filename2);
 
-		file2 = std::fopen(filename2.c_str(), "rb");
-		_log->debug("Open file: {}", filename2);
-		if ( !file2 ){
-			// TODO Failure to open file: must throw FileOpenError.
-			_log->error("Unable to open specified DATE file {}", filename2);
-		}
-
+		file2 = openDATEFile(filename2);
 		countEvents(file2, &nevents2, &firstEvtGDC2);
+
 		//Check which gdc goes first
 		if (firstEvtGDC2 < firstEvtGDC1){
 			gdc2first = true;
@@ -205,7 +213,9 @@ bool next::RawDataInput::readNext()
 				}
 				bool result =  ReadDATEEvent();
 				if (result){
-					writeEvent();
+					if(!eventError_ && discard_){
+						writeEvent();
+					}
 					freeWaveformMemory(&*pmtDgts_);
 					freeWaveformMemory(&*sipmDgts_);
 				}
@@ -234,6 +244,7 @@ bool next::RawDataInput::ReadDATEEvent()
 	int count = 0;
 	fFirstFT=0; /// Position in the buffer of the first FT
 	fFecId=0;   ///ID of the Front End Card
+	eventError_ = false;
 
 	//Num FEB
 	std::fill(sipmPosition, sipmPosition+1792,-1);
@@ -583,7 +594,9 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 
 	if (ErrorBit){
 		auto myheader = (*headOut_).rbegin();
-		_log->warn("Event {} ErrorBit is {}, fec: {}", myheader->NbInRun(), ErrorBit, fFecId);
+		_logerr->error("Event {} ErrorBit is {}, fec: {}", myheader->NbInRun(), ErrorBit, fFecId);
+		fileError_ = true;
+		eventError_ = true;
 		if(discard_){
 			return;
 		}
@@ -711,7 +724,9 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 
 	if (ErrorBit){
 		auto myheader = (*headOut_).rbegin();
-		_log->warn("Event {} ErrorBit is {}, fec: {}", myheader->NbInRun(), ErrorBit, fFecId);
+		_logerr->error("Event {} ErrorBit is {}, fec: {}", myheader->NbInRun(), ErrorBit, fFecId);
+		fileError_ = true;
+		eventError_ = true;
 		if(discard_){
 			return;
 		}
@@ -959,12 +974,13 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 		createWaveforms(&*sipmDgts_, BufferSamples/40); //sipms samples 40 slower than pmts
 	}
 
-
     double timeinmus = 0.;
 
 	if(ErrorBit){
 		auto myheader = (*headOut_).rbegin();
-		_log->warn("Event {} ErrorBit is {}, fec: {}", myheader->NbInRun(), ErrorBit, FecId);
+		_logerr->error("Event {} ErrorBit is {}, fec: {}", myheader->NbInRun(), ErrorBit, FecId);
+		fileError_ = true;
+		eventError_ = true;
 		if(discard_){
 			return;
 		}
@@ -1017,6 +1033,8 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 		std::vector<int> activeSipmsInFeb;
 		activeSipmsInFeb.reserve(NUMBER_OF_FEBS);
 
+		int previousFT = 0;
+		int nextFT = 0;
 		bool endOfData = false;
 		while (!endOfData){
 			time = time + 1;
@@ -1031,6 +1049,34 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 				payload_ptr++;
 				if(verbosity_ >= 3){
 					_log->debug("Feb ID is 0x{:04x}", FEBId);
+				}
+
+				int FT = (*payload_ptr) & 0x0FFFF;
+				if (!ZeroSuppression){
+					if(time < 1){
+						previousFT = FT;
+					}else{
+						//New FT only after reading all FEBs in the FEC
+						if (j == 0){
+							nextFT = ((previousFT + 1) & 0x0FFFF) % (BufferSamples/40);
+						}else{
+							nextFT = previousFT;
+						}
+//						printf("pFT: 0x%04x, FT: 0x%04x, condition: %d\n", previousFT, FT, nextFT == FT);
+						if(nextFT != FT){
+							auto myheader = (*headOut_).rbegin();
+							_logerr->error("SiPM Error! Event {}, FECs ({:x}, {:x}), expected FT was {:x}, current FT is {:x}, time {}", myheader->NbInRun(), channelA, channelB, nextFT, FT, time);
+							fileError_ = true;
+							eventError_ = true;
+							//for(int i=-20; i<20; i++){
+							//	printf("data[%d]: 0x%04x\n", i, *(payload_ptr+i));
+							//}
+							if(discard_){
+								return;
+							}
+						}
+						previousFT = nextFT;
+					}
 				}
 
 				timeinmus = computeSipmTime(payload_ptr, eventReader_);

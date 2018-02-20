@@ -41,6 +41,12 @@ int main(int argc, char* argv[]){
 		//CLose open files with rawdatainput
 		writer.WriteRunInfo();
 		writer.Close();
+
+		if(!rdata.errors()){
+			console->info("RawDataInput finished");
+		}else{
+			console->info("RawDataInput encountered errors");
+		}
 	}else{
 		next::CopyEvents copyEvts = next::CopyEvents(&config);
 		copyEvts.readFile(config.file_in(), config.file_out());

@@ -13,15 +13,16 @@ void finish_with_error(MYSQL *con, std::shared_ptr<spdlog::logger> log)
 void getSensorsFromDB(ReadConfig * config, next::Sensors &sensors, int run_number, bool masked){
 	MYSQL *con = mysql_init(NULL);
 	std::shared_ptr<spdlog::logger> log = spd::stdout_color_mt("DB");
+	std::shared_ptr<spdlog::logger> logerr = spd::stderr_color_mt("mysql");
 
 	if (con == NULL){
-		log->error("mysql_init() failed");
+		logerr->error("mysql_init() failed");
 		exit(1);
 	}
 
 	if (mysql_real_connect(con, config->host().c_str(), config->user().c_str(),
 				config->pass().c_str(), config->dbname().c_str(), 0, NULL, 0) == NULL){
-		finish_with_error(con, log);
+		finish_with_error(con, logerr);
 	}
 
 	//Add run number
@@ -37,12 +38,12 @@ void getSensorsFromDB(ReadConfig * config, next::Sensors &sensors, int run_numbe
 	}
 
 	if (mysql_query(con, sql.c_str())){
-		finish_with_error(con, log);
+		finish_with_error(con, logerr);
 	}
 
 	MYSQL_RES *result = mysql_store_result(con);
 	if (result == NULL){
-		finish_with_error(con, log);
+		finish_with_error(con, logerr);
 	}
 
 	log->info("Sensors mapping read from {} in {}", config->dbname(),

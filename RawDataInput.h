@@ -30,6 +30,8 @@
 #include <iostream>
 #include <memory>
 #include <numeric>
+#include <ios>
+#include <unistd.h>
 
 #define NUM_FEC_SIPM 20
 #define PMTS_PER_FEC 8
@@ -47,6 +49,7 @@ public:
 
   /// Open specified file.
   void readFile(std::string const & filename);
+  std::FILE* openDATEFile(std::string const & filename);
   void countEvents(std::FILE* file, int * events, int * firstEvt);
   int loadNextEvent(std::FILE* file, unsigned char ** buffer);
 
@@ -74,6 +77,8 @@ public:
   int pmtsChannelMask(int16_t chmask, std::vector<int> &channelMaskVec, int fecId, int FWVersion);
 
   void writeEvent();
+
+  bool errors();
 
 private:
   /// This is temporary (hope) to convert the FT times to us in the digit
@@ -138,12 +143,17 @@ private:
   int externalTriggerCh_;
 
   std::shared_ptr<spdlog::logger> _log;
+  std::shared_ptr<spdlog::logger> _logerr;
 
   next::HDF5Writer * _writer;
 
   int fwVersion;
 
+  bool fileError_, eventError_;
+
 };
+
+inline bool RawDataInput::errors(){return fileError_;}
 
 }
 
