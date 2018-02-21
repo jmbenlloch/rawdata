@@ -405,7 +405,7 @@ bool next::RawDataInput::ReadDATEEvent()
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a PMT FEC");
 				}
-//				ReadIndiaPmt(payload_flip,size);
+				ReadIndiaPmt(payload_flip,size);
 			}else if (FECtype==2){
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a Trigger FEC");
@@ -1033,7 +1033,6 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 		 * 10-> 24,26,28, ..., 46              *
 		 * 11-> 25,27,29, ..., 47              *
 		 * ************************************/
-		printf("fecid: %d\n", fecid);
 		if (fecid % 2 == 0){
 			ElecID = channel*2;
 		}else{

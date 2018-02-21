@@ -82,7 +82,7 @@ namespace next{
 
 	void StorePmtWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
 	void StoreSipmWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
-	void StoreTriggerChannels(std::vector<int> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
+	void StoreTriggerChannels(std::vector<next::Digit*> sensors, std::vector<int> triggers, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
 
 	void sortPmts(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);
 	void sortPmtsNoDB(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);

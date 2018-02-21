@@ -183,12 +183,11 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		sortSipms(sorted_sipms, sipms);
 	}
 
+	//Trigger channels elecID
 	std::vector<int> triggers(48, 0);
 	for(int i=0; i<triggerChans.size(); i++){
 		int ch = triggerChans[i];
-		if(!_nodb){
-			ch = _sensors.sensorToElec(ch);
-		}
+		//printf("channel: %d\n", ch);
 		triggers[ch] = 1;
 	}
 
@@ -196,12 +195,11 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 //		printf("ch[%d]: %d\n", i, triggers[i]);
 //	}
 
-
 	//Write waveforms
 	//TODO ZS
 	if (_hasPmts){
 		StorePmtWaveforms(sorted_pmts, total_pmts, pmtDatasize, _pmtrd);
-		StoreTriggerChannels(triggerChans, total_pmts, pmtDatasize, _triggerd);
+		StoreTriggerChannels(sorted_pmts, triggers, total_pmts, pmtDatasize, _triggerd);
 	}
 	if (_hasBlrs){
 		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize, _pmtblr);
@@ -312,12 +310,19 @@ void next::HDF5Writer::sortSipms(std::vector<next::Digit*> &sorted_sensors,
 	}
 }
 
-void next::HDF5Writer::StoreTriggerChannels(std::vector<int > sensors,
-	   	hsize_t nsensors, hsize_t datasize, hsize_t dataset){
+void next::HDF5Writer::StoreTriggerChannels(std::vector<next::Digit*> sensors,
+		std::vector<int> triggers, hsize_t nsensors, hsize_t datasize, hsize_t dataset){
 	short int *data = new short int[nsensors];
 	for(int i=0; i<sensors.size(); i++){
-		std::cout << "sensors: " << sensors[i] << ", " << _sensors.elecToSensor(sensors[i])<< std::endl;
+		if(sensors[i]){
+			int ch = sensors[i]->chID();
+			data[i] = triggers[ch];
+		}else{
+			data[i] = 0;
+		}
 	}
+	WriteWaveform(data, _triggerd, nsensors, _ievt);
+	delete[] data;
 }
 
 //For PMTs missing sensors are filled at the end
