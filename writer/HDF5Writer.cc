@@ -48,6 +48,7 @@ void next::HDF5Writer::Close(){
 
 void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		DigitCollection& extPmt, DigitCollection& sipms,
+		std::vector<std::pair<std::string, int> > triggerInfo,
 		std::uint64_t timestamp, unsigned int evt_number, size_t run_number){
 	_log->debug("Writing event to HDF5 file");
 
@@ -133,6 +134,10 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 			_extpmtrd = createWaveform(group, extPmt_name, extPmtDatasize);
 		}
 
+		if(triggerInfo.size() > 0){
+			saveTriggerInfo(triggerInfo);
+		}
+
 		_firstEvent = false;
 
 		if(_nodb){
@@ -206,6 +211,23 @@ void next::HDF5Writer::select_active_sensors(std::vector<next::Digit*> * active_
 		if (sensors[i].active()){
 			active_sensors->push_back(&(sensors[i]));
 		}
+	}
+}
+
+void next::HDF5Writer::saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo){
+	//Create group
+	std::string triggerGroup = std::string("/Trigger");
+	hid_t tgroup = createGroup(_file, triggerGroup);
+
+	hsize_t memtype_trigger = createTriggerType();
+	std::string trigger_name = std::string("configuration");
+	hid_t trigger_table = createTable(tgroup, trigger_name, memtype_trigger);
+	for(int i=0; i<triggerInfo.size(); i++){
+		trigger_t triggerData;
+		memset(triggerData.param, 0, STRLEN);
+		memcpy(triggerData.param, triggerInfo[i].first.c_str(), triggerInfo[i].first.length());
+		triggerData.value = triggerInfo[i].second;
+		writeTrigger(&triggerData, trigger_table, memtype_trigger, i);
 	}
 }
 

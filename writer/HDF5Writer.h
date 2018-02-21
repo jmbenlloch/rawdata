@@ -76,7 +76,7 @@ namespace next{
     virtual ~HDF5Writer();
 
     //! write event
-    void Write(DigitCollection & pmts, DigitCollection& blrs, DigitCollection& extPmt, DigitCollection& sipms, std::uint64_t timestamp, unsigned int evt_number, size_t run_number);
+    void Write(DigitCollection & pmts, DigitCollection& blrs, DigitCollection& extPmt, DigitCollection& sipms, std::vector<std::pair<std::string, int> > triggferInfo,  std::uint64_t timestamp, unsigned int evt_number, size_t run_number);
 
 	void StorePmtWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
 	void StoreSipmWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
@@ -87,6 +87,7 @@ namespace next{
 	void sortSipms(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);
 	void save_elecids(std::vector<int>* elecids, std::vector<next::Digit*> &sorted_sensors);
 	void select_active_sensors(std::vector<next::Digit*> * active_sensors, DigitCollection& sensors);
+	void saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo);
 
     //! open file
     void Open(std::string filename);

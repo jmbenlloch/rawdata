@@ -1,8 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
 // RawDataInput
 //
-// Reads the files provided by the DAQ and converts them into ART
-// Files containing Digit, DATEHeader and Trigger data Products.
+// Reads the files provided by the DAQ
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -15,7 +14,6 @@
 #endif
 
 #include "navel/Digit.hh"
-#include "navel/Trigger.hh"
 #include "navel/DATEEventHeader.hh"
 
 #ifndef _HDF5WRITER
@@ -62,9 +60,7 @@ public:
   void ReadHotelPmt(int16_t * buffer, unsigned int size);
   void ReadIndiaPmt(int16_t * buffer, unsigned int size);
   void ReadHotelTrigger(int16_t * buffer, unsigned int size);
-
-  ///Set Trigger class
-  void SetTriggerType(int16_t Trigger);
+  void ReadIndiaTrigger(int16_t * buffer, unsigned int size);
 
   ///Fill PMT classes
   int setDualChannels(next::EventReader * reader);
@@ -125,7 +121,8 @@ private:
 
   // To aid output.
   std::uint64_t eventTime_;
-  std::unique_ptr<next::TriggerCollection> trigOut_;
+//  std::unique_ptr<next::TriggerCollection> trigOut_;
+  std::vector<std::pair<std::string, int> > trigOut_;
   std::unique_ptr<next::EventHeaderCollection> headOut_;
   std::unique_ptr<next::DigitCollection> pmtDgts_;
   std::unique_ptr<next::DigitCollection> sipmDgts_;

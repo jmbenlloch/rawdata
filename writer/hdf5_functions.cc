@@ -1,5 +1,16 @@
 #include "writer/hdf5_functions.h"
 
+hid_t createTriggerType(){
+  hid_t strtype = H5Tcopy(H5T_C_S1);
+  H5Tset_size (strtype, STRLEN);
+
+  //Create compound datatype for the table
+  hsize_t memtype = H5Tcreate (H5T_COMPOUND, sizeof (trigger_t));
+  H5Tinsert (memtype, "param" , HOFFSET (trigger_t, param), strtype);
+  H5Tinsert (memtype, "value" , HOFFSET (trigger_t, value), H5T_NATIVE_INT);
+  return memtype;
+}
+
 hid_t createEventType(){
 	//Create compound datatype for the table
 	hsize_t memtype = H5Tcreate (H5T_COMPOUND, sizeof (evt_t));
@@ -201,6 +212,24 @@ void writeRun(runinfo_t * runData, hid_t dataset, hid_t memtype, hsize_t evt_num
 	hsize_t count[1] = {1};
 	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
 	H5Dwrite(dataset, memtype, memspace, file_space, H5P_DEFAULT, runData);
+	H5Sclose(file_space);
+	H5Sclose(memspace);
+}
+
+void writeTrigger(trigger_t * triggerData, hid_t dataset, hid_t memtype, hsize_t index){
+	hid_t memspace, file_space;
+	hsize_t dims[1] = {1};
+	memspace = H5Screate_simple(1, dims, NULL);
+
+	//Extend PMT dataset
+	dims[0] = index+1;
+	H5Dset_extent(dataset, dims);
+
+	file_space = H5Dget_space(dataset);
+	hsize_t start[1] = {index};
+	hsize_t count[1] = {1};
+	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
+	H5Dwrite(dataset, memtype, memspace, file_space, H5P_DEFAULT, triggerData);
 	H5Sclose(file_space);
 	H5Sclose(memspace);
 }

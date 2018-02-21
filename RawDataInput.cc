@@ -28,7 +28,6 @@ next::RawDataInput::RawDataInput(ReadConfig * config, HDF5Writer * writer) :
 	buffer_(NULL),
 	dualChannels(48,0),
 	verbosity_(config->verbosity()),
-	trigOut_(),
 	headOut_(),
 	pmtDgts_(),
 	sipmDgts_(),
@@ -253,6 +252,7 @@ bool next::RawDataInput::ReadDATEEvent()
 	// Reset the output pointers.
 	pmtDgts_.reset(new DigitCollection);
 	sipmDgts_.reset(new DigitCollection);
+	trigOut_.clear();
 
 	if (!event_) return false;
 
@@ -404,24 +404,19 @@ bool next::RawDataInput::ReadDATEEvent()
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a PMT FEC");
 				}
-				ReadIndiaPmt(payload_flip,size);
+//				ReadIndiaPmt(payload_flip,size);
 			}else if (FECtype==2){
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a Trigger FEC");
 				}
-				ReadHotelTrigger(payload_flip,size);
+				ReadIndiaTrigger(payload_flip,size);
 			}else  if (FECtype==1){
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a SIPM FEC");
 				}
-				ReadHotelSipm(payload_flip, size);
+//				ReadHotelSipm(payload_flip, size);
 			}
 		}
-
-		///Read and write trigger type class
-		int16_t trigger = eventReader_->TriggerType();
-		//TODO What is this here?
-		SetTriggerType(trigger);
 
 		count = end - position;
 		free(payload_flip_free);
@@ -446,6 +441,169 @@ void flipWords(unsigned int size, int16_t* in, int16_t* out){
 		pos_in  += 2;
 		pos_out += 2;
 	}
+}
+
+void next::RawDataInput::ReadIndiaTrigger(int16_t * buffer, unsigned int size){
+	int BufferSamples = eventReader_->BufferSamples();
+
+	for(int dbg=0;dbg<30;dbg++){
+		printf("data[%d] = 0x%04x\n", dbg, buffer[dbg-15]);
+	}
+
+//	if(verbosity_ >= 2){
+		for(int dbg=0;dbg<9;dbg++){
+//			_log->debug("TrgConf[{}] = 0x{:04x}", dbg, buffer[dbg]);
+			printf("TrgConf[%d] = 0x%04x\n", dbg, buffer[dbg]);
+		}
+		_log->debug("Ch info:");
+		for(int dbg=0;dbg<4;dbg++){
+//			_log->debug("Ch info[{}] = 0x{:04x}", dbg, buffer[dbg+6]);
+			printf("Ch info[%d] = 0x%04x\n", dbg, buffer[dbg+6]);
+		}
+		for(int dbg=0;dbg<4;dbg++){
+//			_log->debug("Trigger lost[{}] = 0x{:04x}", dbg, buffer[dbg+12]);
+			printf("Trigger lost[%d] = 0x%04x\n", dbg, buffer[dbg+12]);
+		}
+//	}
+
+	//TRG conf 8
+	printf("buffer: 0x%04x\n", *buffer);
+	int triggerMask = (*buffer & 0x003FF) << 16;
+	buffer++;
+
+	//TRG conf 7
+	printf("buffer: 0x%04x\n", *buffer);
+	triggerMask = triggerMask | (*buffer & 0x0FFFF);
+	printf("triggerMask: 0x%04x\n", triggerMask);
+	buffer++;
+
+	//TRG conf 6
+	printf("buffer: 0x%04x\n", *buffer);
+	int triggerDiff1 = *buffer & 0x0FFFF;
+	printf("triggerDiff1: 0x%04x\n", triggerDiff1);
+	buffer++;
+
+	//TRG conf 5
+	printf("buffer: 0x%04x\n", *buffer);
+	int triggerDiff2 = *buffer & 0x0FFFF;
+	printf("triggerDiff2: 0x%04x\n", triggerDiff2);
+	buffer++;
+
+	//TRG conf 4
+	printf("buffer: 0x%04x\n", *buffer);
+	int triggerWindowA1  =  *buffer & 0x003f;
+	int triggerChanA1    = (*buffer & 0x01FC0) >> 6;
+	bool autoTrigger     = (*buffer & 0x02000) >> 13;
+	bool dualTrigger     = (*buffer & 0x04000) >> 14;
+	bool externalTrigger = (*buffer & 0x08000) >> 15;
+	printf("Trg Chan A 1: 0x%04x\n", triggerWindowA1);
+	printf("Trg Window A 1: 0x%04x\n", triggerChanA1);
+	printf("autoTrigger: 0x%04x\n", autoTrigger);
+	printf("dualTrigger: 0x%04x\n", dualTrigger);
+	printf("externalTrigger: 0x%04x\n", externalTrigger);
+	buffer++;
+
+	//TRG conf 3
+	printf("buffer: 0x%04x\n", *buffer);
+	int triggerWindowB1 =  *buffer & 0x003f;
+	int triggerChanB1   = (*buffer & 0x01FC0) >> 6;
+	bool mask           = (*buffer & 0x02000) >> 13;
+	bool triggerB2      = (*buffer & 0x04000) >> 14;
+	bool triggerB1      = (*buffer & 0x08000) >> 15;
+	printf("Trg Chan B 1: 0x%04x\n", triggerWindowB1);
+	printf("Trg Window B 1: 0x%04x\n", triggerChanB1);
+	printf("mask: 0x%04x\n", mask);
+	printf("triggerB2: 0x%04x\n", triggerB2);
+	printf("triggerB1: 0x%04x\n", triggerB1);
+	buffer++;
+
+	//TRG conf 2
+	printf("buffer: 0x%04x\n", *buffer);
+	int triggerWindowA2 =  *buffer & 0x003f;
+	int triggerChanA2   = (*buffer & 0x01FC0) >> 6;
+	printf("Trg Chan A 2: 0x%04x\n", triggerWindowA2);
+	printf("Trg Window A 2: 0x%04x\n", triggerChanA2);
+	buffer++;
+
+	//TRG conf 1
+	printf("buffer: 0x%04x\n", *buffer);
+	int triggerWindowB2 =  *buffer & 0x003f;
+	int triggerChanB2   = (*buffer & 0x01FC0) >> 6;
+	printf("Trg Chan B 2: 0x%04x\n", triggerWindowB2);
+	printf("Trg Window B 2: 0x%04x\n", triggerChanB2);
+	buffer++;
+
+	//TRG conf 0
+	printf("buffer: 0x%04x\n", *buffer);
+	int triggerExtN =  *buffer & 0x000F;
+	int triggerIntN = (*buffer & 0x0FFF0) >> 4;
+	printf("triggerIntN: 0x%04x\n", triggerIntN);
+	printf("triggerExtN: 0x%04x\n", triggerExtN);
+	buffer++;
+
+	//Trigger type
+	int triggerType = (*buffer & 0x0FFFF) >> 15;
+	buffer++;
+	printf("triggerType: 0x%04x\n", triggerType);
+
+	//Channels producing trigger
+	int activePMT = 0;
+	int channelNumber = 48;
+	for (int chinfo = 0; chinfo < 3; chinfo++){
+		printf("channels: 0x%04x\n", *buffer);
+		for (int j=15;j>=0;j--){
+			activePMT = 0;
+			activePMT = CheckBit(*buffer & 0x0FFFF, j);
+
+			if (activePMT > 0){
+				if( verbosity_ >= 2){
+					_log->debug("PMT Number {} is {}", channelNumber, activePMT);
+				}
+				printf("ch %d: %d\n", channelNumber, activePMT);
+			}
+			channelNumber--;
+		}
+		buffer++;
+	}
+
+	//Trigger lost type 2
+	int triggerLost2 = (*buffer & 0x0FFFF) << 16;
+	buffer++;
+	triggerLost2 = triggerLost2 | (*buffer & 0x0FFFF);
+	buffer++;
+	printf("triggerLost2: 0x%04x\n", triggerLost2);
+
+	//Trigger lost type 1
+	int triggerLost1 = (*buffer & 0x0FFFF) << 16;
+	buffer++;
+	triggerLost1 = triggerLost1 | (*buffer & 0x0FFFF);
+	buffer++;
+	printf("triggerLost1: 0x%04x\n", triggerLost1);
+
+	trigOut_.push_back(std::make_pair("triggerType", triggerType));
+	trigOut_.push_back(std::make_pair("triggerLost1", triggerLost1));
+	trigOut_.push_back(std::make_pair("triggerLost2", triggerLost2));
+	trigOut_.push_back(std::make_pair("triggerMask", triggerMask));
+	trigOut_.push_back(std::make_pair("triggerDiff1", triggerDiff1));
+	trigOut_.push_back(std::make_pair("triggerDiff2", triggerDiff2));
+	trigOut_.push_back(std::make_pair("autoTrigger", autoTrigger));
+	trigOut_.push_back(std::make_pair("dualTrigger", dualTrigger));
+	trigOut_.push_back(std::make_pair("externalTrigger", externalTrigger));
+	trigOut_.push_back(std::make_pair("mask", mask));
+	trigOut_.push_back(std::make_pair("triggerB2", triggerB2));
+	trigOut_.push_back(std::make_pair("triggerB1", triggerB1));
+	trigOut_.push_back(std::make_pair("chanA1", triggerWindowA1));
+	trigOut_.push_back(std::make_pair("chanA2", triggerWindowA2));
+	trigOut_.push_back(std::make_pair("chanB1", triggerWindowB1));
+	trigOut_.push_back(std::make_pair("chanB2", triggerWindowB2));
+	trigOut_.push_back(std::make_pair("windowA1", triggerChanA1));
+	trigOut_.push_back(std::make_pair("windowB1", triggerChanB1));
+	trigOut_.push_back(std::make_pair("windowA2", triggerChanA2));
+	trigOut_.push_back(std::make_pair("windowB2", triggerChanB2));
+	trigOut_.push_back(std::make_pair("triggerIntN", triggerIntN));
+	trigOut_.push_back(std::make_pair("triggerExtN", triggerExtN));
+
+	printf("trigger size: %d\n", trigOut_.size());
 }
 
 void next::RawDataInput::ReadHotelTrigger(int16_t * buffer, unsigned int size){
@@ -533,12 +691,6 @@ void next::RawDataInput::ReadHotelTrigger(int16_t * buffer, unsigned int size){
 		_log->debug("triggerExtN: {:x}", triggerExtN);
 	}
 
-	//Get channels info
-	if ( trigOut_ == nullptr ){
-		trigOut_.reset(new next::TriggerCollection);
-		(*trigOut_).emplace_back( );
-	}
-
 	buffer++;
 	int activePMT = 0;
 	int channelNumber = 63;
@@ -551,30 +703,11 @@ void next::RawDataInput::ReadHotelTrigger(int16_t * buffer, unsigned int size){
 			if (activePMT > 0){
 				if( verbosity_ >= 2){
 					_log->debug("PMT Number {} is {}", channelNumber, activePMT);
-					_log->debug("N triggers in vec = {}", (*trigOut_).rbegin()->nTrigChan());
 				}
-				(*trigOut_).rbegin()->addTrigChan(channelNumber);
 			}
 			channelNumber--;
 		}
 	}
-
-	//Copy results to Trigger object
-	(*trigOut_).rbegin()->setTriggerCode(triggerCode);
-	(*trigOut_).rbegin()->setMask(mask);
-	(*trigOut_).rbegin()->setTriggerMask(triggerMask);
-	(*trigOut_).rbegin()->setExternalTrigger(externalTrigger);
-	(*trigOut_).rbegin()->setDualTrigger(dualTrigger);
-	(*trigOut_).rbegin()->setAutoTrigger(autoTrigger);
-	(*trigOut_).rbegin()->setTwoTrigger(twoTrigger);
-	(*trigOut_).rbegin()->setDiff(triggerDiff);
-	(*trigOut_).rbegin()->setChan1(triggerChan1);
-	(*trigOut_).rbegin()->setChan2(triggerChan2);
-	(*trigOut_).rbegin()->setWindow1(triggerWindow1);
-	(*trigOut_).rbegin()->setWindow2(triggerWindow2);
-	(*trigOut_).rbegin()->setTriggerIntN(triggerIntN);
-	(*trigOut_).rbegin()->setTriggerExtN(triggerExtN);
-	(*trigOut_).rbegin()->setDAQbufferSize(BufferSamples);
 }
 
 void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
@@ -1346,21 +1479,6 @@ void CreatePMTs(next::DigitCollection * pmts, int * positions, std::vector<int> 
 	}
 }
 
-void next::RawDataInput::SetTriggerType(int16_t Trigger)
-{
-	if ( trigOut_ == nullptr ){
-		// Get the information into the unique_ptr
-		trigOut_.reset(new next::TriggerCollection);
-		(*trigOut_).emplace_back( Trigger );
-	} else
-		(*(*trigOut_).rbegin()).setTriggerType( Trigger );
-
-	(*(*trigOut_).rbegin()).setPreTrigger(fPreTrgSamples);
-	(*(*trigOut_).rbegin()).setFecID(fFecId);
-	(*(*trigOut_).rbegin()).setBufferPosition(fFirstFT);
-}
-
-
 unsigned int next::RawDataInput::readHeaderSize(std::FILE* fptr) const
 {
 	unsigned char * buf = new unsigned char[4];
@@ -1443,7 +1561,7 @@ void next::RawDataInput::writeEvent(){
 	unsigned int event_number = date_header->NbInRun();
 	run_ = date_header->RunNb();
 
-	_writer->Write(pmts, blrs, extPmt, *sipmDgts_, eventTime_, event_number, run_);
+	_writer->Write(pmts, blrs, extPmt, *sipmDgts_, trigOut_, eventTime_, event_number, run_);
 }
 
 void freeWaveformMemory(next::DigitCollection * sensors){
