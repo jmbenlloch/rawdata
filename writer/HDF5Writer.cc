@@ -49,6 +49,7 @@ void next::HDF5Writer::Close(){
 void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		DigitCollection& extPmt, DigitCollection& sipms,
 		std::vector<std::pair<std::string, int> > triggerInfo,
+		std::vector<int> triggerChans,
 		std::uint64_t timestamp, unsigned int evt_number, size_t run_number){
 	_log->debug("Writing event to HDF5 file");
 
@@ -57,6 +58,10 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	evtData.evt_number = evt_number;
 	evtData.timestamp = timestamp;
 	writeEvent(&evtData, _eventsTable, _memtypeEvt, _ievt);
+
+//	for(int i=0; i<triggerChans.size(); i++){
+//		std::cout << "trigger channel: " << triggerChans[i] << std::endl;
+//	}
 
 	//Get number of sensors
 	int total_pmts  = _sensors.getNumberOfPmts();
@@ -106,6 +111,10 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		runinfo.run_number = (int) run_number;
 		writeRun(&runinfo, runinfo_table, memtype_run, _ievt);
 
+		// Trigger info
+		if(triggerInfo.size() > 0){
+			saveTriggerInfo(triggerInfo);
+		}
 
 		//Create group
 		std::string groupName = std::string("/RD");
@@ -115,6 +124,10 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		if (_hasPmts){
 			std::string pmt_name = std::string("pmtrwf");
 			_pmtrd = createWaveforms(group, pmt_name, total_pmts, pmtDatasize);
+
+			//Create trigger array
+			std::string trigger_name = std::string("events");
+			_triggerd = createWaveform(_triggerG, trigger_name, total_pmts);
 		}
 
 		//Create blr array
@@ -132,10 +145,6 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		if(extPmt.size() > 0){
 			std::string extPmt_name = std::string("extpmt");
 			_extpmtrd = createWaveform(group, extPmt_name, extPmtDatasize);
-		}
-
-		if(triggerInfo.size() > 0){
-			saveTriggerInfo(triggerInfo);
 		}
 
 		_firstEvent = false;
@@ -174,11 +183,25 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		sortSipms(sorted_sipms, sipms);
 	}
 
+	std::vector<int> triggers(48, 0);
+	for(int i=0; i<triggerChans.size(); i++){
+		int ch = triggerChans[i];
+		if(!_nodb){
+			ch = _sensors.sensorToElec(ch);
+		}
+		triggers[ch] = 1;
+	}
+
+//	for(int i=0; i<triggers.size(); i++){
+//		printf("ch[%d]: %d\n", i, triggers[i]);
+//	}
+
 
 	//Write waveforms
 	//TODO ZS
 	if (_hasPmts){
 		StorePmtWaveforms(sorted_pmts, total_pmts, pmtDatasize, _pmtrd);
+		StoreTriggerChannels(triggerChans, total_pmts, pmtDatasize, _triggerd);
 	}
 	if (_hasBlrs){
 		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize, _pmtblr);
@@ -217,11 +240,11 @@ void next::HDF5Writer::select_active_sensors(std::vector<next::Digit*> * active_
 void next::HDF5Writer::saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo){
 	//Create group
 	std::string triggerGroup = std::string("/Trigger");
-	hid_t tgroup = createGroup(_file, triggerGroup);
+	_triggerG = createGroup(_file, triggerGroup);
 
 	hsize_t memtype_trigger = createTriggerType();
 	std::string trigger_name = std::string("configuration");
-	hid_t trigger_table = createTable(tgroup, trigger_name, memtype_trigger);
+	hid_t trigger_table = createTable(_triggerG, trigger_name, memtype_trigger);
 	for(int i=0; i<triggerInfo.size(); i++){
 		trigger_t triggerData;
 		memset(triggerData.param, 0, STRLEN);
@@ -286,6 +309,14 @@ void next::HDF5Writer::sortSipms(std::vector<next::Digit*> &sorted_sensors,
 		if(sensorid >= 0){
 			sorted_sensors[position] = &(sensors[i]);
 		}
+	}
+}
+
+void next::HDF5Writer::StoreTriggerChannels(std::vector<int > sensors,
+	   	hsize_t nsensors, hsize_t datasize, hsize_t dataset){
+	short int *data = new short int[nsensors];
+	for(int i=0; i<sensors.size(); i++){
+		std::cout << "sensors: " << sensors[i] << ", " << _sensors.elecToSensor(sensors[i])<< std::endl;
 	}
 }
 

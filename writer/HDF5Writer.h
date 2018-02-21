@@ -49,9 +49,11 @@ namespace next{
 
 	//! Group for Run info
 	size_t _rinfoG;
+	size_t _triggerG;
 
 	//Datasets
 	size_t _pmtrd;
+	size_t _triggerd;
 	size_t _extpmtrd;
 	size_t _eventsTable;
 	size_t _pmtblr;
@@ -76,10 +78,11 @@ namespace next{
     virtual ~HDF5Writer();
 
     //! write event
-    void Write(DigitCollection & pmts, DigitCollection& blrs, DigitCollection& extPmt, DigitCollection& sipms, std::vector<std::pair<std::string, int> > triggferInfo,  std::uint64_t timestamp, unsigned int evt_number, size_t run_number);
+    void Write(DigitCollection & pmts, DigitCollection& blrs, DigitCollection& extPmt, DigitCollection& sipms, std::vector<std::pair<std::string, int> > triggerInfo, std::vector<int> triggerChans,  std::uint64_t timestamp, unsigned int evt_number, size_t run_number);
 
 	void StorePmtWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
 	void StoreSipmWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
+	void StoreTriggerChannels(std::vector<int> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
 
 	void sortPmts(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);
 	void sortPmtsNoDB(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);

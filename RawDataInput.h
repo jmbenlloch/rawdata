@@ -35,7 +35,7 @@
 #define PMTS_PER_FEC 8
 #define SIPMS_PER_FEB 64
 #define NUMBER_OF_FEBS 28
-#define MEMSIZE 5500000
+#define MEMSIZE 8500000
 
 namespace next {
 
@@ -121,7 +121,7 @@ private:
 
   // To aid output.
   std::uint64_t eventTime_;
-//  std::unique_ptr<next::TriggerCollection> trigOut_;
+  std::vector<int> triggerChans_;
   std::vector<std::pair<std::string, int> > trigOut_;
   std::unique_ptr<next::EventHeaderCollection> headOut_;
   std::unique_ptr<next::DigitCollection> pmtDgts_;
