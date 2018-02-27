@@ -552,20 +552,20 @@ void next::RawDataInput::ReadIndiaTrigger(int16_t * buffer, unsigned int size){
 		_log->debug("triggerMask: 0x{:04x}\n", triggerMask);
 		_log->debug("triggerDiff1: 0x{:04x}\n", triggerDiff1);
 		_log->debug("triggerDiff2: 0x{:04x}\n", triggerDiff2);
-		_log->debug("Trg Chan A 1: 0x{:04x}\n", triggerWindowA1);
-		_log->debug("Trg Window A 1: 0x{:04x}\n", triggerChanA1);
+		_log->debug("Trg Chan A 1: 0x{:04x}\n", triggerChanA1);
+		_log->debug("Trg Window A 1: 0x{:04x}\n", triggerWindowA1);
 		_log->debug("autoTrigger: 0x{:04x}04x\n", autoTrigger);
 		_log->debug("dualTrigger: 0x{:04x}\n", dualTrigger);
 		_log->debug("externalTrigger: 0x{:04x}\n", externalTrigger);
-		_log->debug("Trg Chan B 1: 0x{:04x}\n", triggerWindowB1);
-		_log->debug("Trg Window B 1: 0x{:04x}\n", triggerChanB1);
+		_log->debug("Trg Chan B 1: 0x{:04x}\n", triggerChanB1);
+		_log->debug("Trg Window B 1: 0x{:04x}\n", triggerWindowB1);
 		_log->debug("mask: 0x{:04x}\n", mask);
 		_log->debug("triggerB2: 0x{:04x}\n", triggerB2);
 		_log->debug("triggerB1: 0x{:04x}\n", triggerB1);
-		_log->debug("Trg Chan A 2: 0x{:04x}\n", triggerWindowA2);
-		_log->debug("Trg Window A 2: 0x{:04x}\n", triggerChanA2);
-		_log->debug("Trg Chan B 2: 0x{:04x}\n", triggerWindowB2);
-		_log->debug("Trg Window B 2: 0x{:04x}\n", triggerChanB2);
+		_log->debug("Trg Chan A 2: 0x{:04x}\n", triggerChanA2);
+		_log->debug("Trg Window A 2: 0x{:04x}\n", triggerWindowA2);
+		_log->debug("Trg Chan B 2: 0x{:04x}\n", triggerChanB2);
+		_log->debug("Trg Window B 2: 0x{:04x}\n", triggerWindowB2);
 		_log->debug("triggerIntN: 0x{:04x}\n", triggerIntN);
 		_log->debug("triggerExtN: 0x{:04x}\n", triggerExtN);
 		_log->debug("triggerType: 0x{:04x}\n", triggerType);
@@ -585,14 +585,14 @@ void next::RawDataInput::ReadIndiaTrigger(int16_t * buffer, unsigned int size){
 	trigOut_.push_back(std::make_pair("mask", mask));
 	trigOut_.push_back(std::make_pair("triggerB2", triggerB2));
 	trigOut_.push_back(std::make_pair("triggerB1", triggerB1));
-	trigOut_.push_back(std::make_pair("chanA1", triggerWindowA1));
-	trigOut_.push_back(std::make_pair("chanA2", triggerWindowA2));
-	trigOut_.push_back(std::make_pair("chanB1", triggerWindowB1));
-	trigOut_.push_back(std::make_pair("chanB2", triggerWindowB2));
-	trigOut_.push_back(std::make_pair("windowA1", triggerChanA1));
-	trigOut_.push_back(std::make_pair("windowB1", triggerChanB1));
-	trigOut_.push_back(std::make_pair("windowA2", triggerChanA2));
-	trigOut_.push_back(std::make_pair("windowB2", triggerChanB2));
+	trigOut_.push_back(std::make_pair("chanA1", triggerChanA1));
+	trigOut_.push_back(std::make_pair("chanA2", triggerChanA2));
+	trigOut_.push_back(std::make_pair("chanB1", triggerChanB1));
+	trigOut_.push_back(std::make_pair("chanB2", triggerChanB2));
+	trigOut_.push_back(std::make_pair("windowA1", triggerWindowA1));
+	trigOut_.push_back(std::make_pair("windowB1", triggerWindowB1));
+	trigOut_.push_back(std::make_pair("windowA2", triggerWindowA2));
+	trigOut_.push_back(std::make_pair("windowB2", triggerWindowB2));
 	trigOut_.push_back(std::make_pair("triggerIntN", triggerIntN));
 	trigOut_.push_back(std::make_pair("triggerExtN", triggerExtN));
 }
@@ -695,10 +695,24 @@ void next::RawDataInput::ReadHotelTrigger(int16_t * buffer, unsigned int size){
 				if( verbosity_ >= 2){
 					_log->debug("PMT Number {} is {}", channelNumber, activePMT);
 				}
+				triggerChans_.push_back(channelNumber);
 			}
 			channelNumber--;
 		}
 	}
+	trigOut_.push_back(std::make_pair("triggerCode", triggerCode));
+	trigOut_.push_back(std::make_pair("triggerMask", triggerMask));
+	trigOut_.push_back(std::make_pair("triggerDiff", triggerDiff));
+	trigOut_.push_back(std::make_pair("autoTrigger", autoTrigger));
+	trigOut_.push_back(std::make_pair("dualTrigger", dualTrigger));
+	trigOut_.push_back(std::make_pair("externalTrigger", externalTrigger));
+	trigOut_.push_back(std::make_pair("mask", mask));
+	trigOut_.push_back(std::make_pair("channel1", triggerChan1));
+	trigOut_.push_back(std::make_pair("channel2", triggerChan2));
+	trigOut_.push_back(std::make_pair("window1", triggerWindow1));
+	trigOut_.push_back(std::make_pair("window2", triggerWindow2));
+	trigOut_.push_back(std::make_pair("triggerIntN", triggerIntN));
+	trigOut_.push_back(std::make_pair("triggerExtN", triggerExtN));
 }
 
 void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
