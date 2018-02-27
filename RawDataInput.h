@@ -145,6 +145,7 @@ private:
   next::HDF5Writer * _writer;
 
   int fwVersion;
+  int fwVersionPmt;
 
   bool fileError_, eventError_;
 

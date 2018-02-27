@@ -381,6 +381,7 @@ bool next::RawDataInput::ReadDATEEvent()
 //					}
 //				}
 				ReadHotelPmt(payload_flip,size);
+				fwVersionPmt = fwVersion;
 //				for(unsigned int i=0; i<pmtDgts_->size(); i++){
 //					if((*pmtDgts_)[i].active()){
 //						std::cout << (*pmtDgts_)[i].nSamples() << "after read pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveform()[0] << std::endl;
@@ -406,6 +407,7 @@ bool next::RawDataInput::ReadDATEEvent()
 					_log->debug("This is a PMT FEC");
 				}
 				ReadIndiaPmt(payload_flip,size);
+				fwVersionPmt = fwVersion;
 			}else if (FECtype==2){
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a Trigger FEC");
@@ -1491,7 +1493,7 @@ void next::RawDataInput::writeEvent(){
 
 	auto erIt = pmtDgts_->begin();
 	while ( erIt != pmtDgts_->end() ){
-		if (fwVersion == 8){
+		if (fwVersionPmt == 8){
 			int chid = (*erIt).chID();
 			bool delCh = false;
 			if (dualChannels[chid] && (*erIt).active()){
@@ -1531,7 +1533,7 @@ void next::RawDataInput::writeEvent(){
 			}
 		}
 
-		if(fwVersion == 9){
+		if(fwVersionPmt == 9){
 			int chid = (*erIt).chID();
 			if ((*erIt).active()){
 				// 0-11 ->   0- 11 Real
