@@ -1512,7 +1512,7 @@ void next::RawDataInput::writeEvent(){
 			bool delCh = false;
 			if (dualChannels[chid] && (*erIt).active()){
 				//In the first fec
-				if(chid <=15){
+//				if(chid <=15){
 					// the upper channel is the BLR one
 					if(chid > channelsRelation[chid]){
 						(*erIt).setChID(channelsRelation[chid]);
@@ -1522,17 +1522,17 @@ void next::RawDataInput::writeEvent(){
 					}else{
 						pmts.push_back(*erIt);
 					}
-				}else{
-					// In the second fec the lower channel is the BLR one
-					if(chid < channelsRelation[chid]){
-						(*erIt).setChID(channelsRelation[chid]);
-						blrs.push_back(*erIt);
-						erIt = (*pmtDgts_).erase( erIt );
-						delCh = true;
-					}else{
-						pmts.push_back(*erIt);
-					}
-				}
+//				}else{
+//					// In the second fec the lower channel is the BLR one
+//					if(chid < channelsRelation[chid]){
+//						(*erIt).setChID(channelsRelation[chid]);
+//						blrs.push_back(*erIt);
+//						erIt = (*pmtDgts_).erase( erIt );
+//						delCh = true;
+//					}else{
+//						pmts.push_back(*erIt);
+//					}
+//				}
 			}else{
 				if (chid == externalTriggerCh_){
 					if( (*erIt).active()){
