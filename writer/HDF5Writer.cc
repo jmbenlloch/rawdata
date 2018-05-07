@@ -150,6 +150,21 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		_firstEvent = false;
 
 		if(_nodb){
+			// Hack to be compatible with IC (always expects pmtrwf,
+			// pmtblr, sipmrwf...)
+			if(!_hasPmts){
+				std::string pmt_name = std::string("pmtrwf");
+				_pmtrd = createWaveforms(group, pmt_name, 1, 1);
+			}
+			if(!_hasBlrs){
+				std::string blr_name = std::string("pmtblr");
+				_pmtblr = createWaveforms(group, blr_name, 1, 1);
+			}
+			if (!_hasSipms){
+				std::string sipm_name = std::string("sipmrwf");
+				_sipmrd = createWaveforms(group, sipm_name, 1, 1);
+			}
+
 			//Group for runinfo
 			std::string zs_group_name = std::string("/ZS");
 			hsize_t zsinfoG = createGroup(_file, zs_group_name);
