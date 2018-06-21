@@ -1275,12 +1275,12 @@ int next::RawDataInput::sipmChannelMask(int16_t * &ptr, std::vector<int> &channe
 	int ElecID, sipmNumber;
 
 	channelMaskVec.clear();
-	for(int l=0; l<4; l++){
+	for(int l=4; l>0; l--){
 		temp = (*ptr) & 0x0FFFF;
 		for (int t=0; t < 16; t++){
 			int bit = CheckBit(temp, 15-t);
 
-			ElecID = (febId+1)*1000 + l*16 + t;
+			ElecID = (febId+1)*1000 + l*16 - t - 1;
 			sipmNumber = SipmIDtoPosition(ElecID);
 
 			if(bit>0){
