@@ -1268,6 +1268,8 @@ int next::RawDataInput::pmtsChannelMask(int16_t chmask, std::vector<int> &channe
 }
 
 //There are 4 16-bit words with the channel mask for SiPMs
+//MSB ch63, LSB ch0
+//Data came after from 0 to 63
 int next::RawDataInput::sipmChannelMask(int16_t * &ptr, std::vector<int> &channelMaskVec, int febId){
 	int TotalNumberOfSiPMs = 0;
 	int temp;
@@ -1293,6 +1295,7 @@ int next::RawDataInput::sipmChannelMask(int16_t * &ptr, std::vector<int> &channe
 		//}
 		ptr++;
 	}
+	std::sort(channelMaskVec.begin(), channelMaskVec.end());
 	return TotalNumberOfSiPMs;
 }
 
