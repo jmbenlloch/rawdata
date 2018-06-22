@@ -1226,8 +1226,11 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 					sipmChannelMask(payload_ptr, feb_chmask[FEBId], FEBId);
 					setActiveSensors(&(feb_chmask[FEBId]), &*sipmDgts_, sipmPosition);
 				}
-
-				decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
+				if(ZeroSuppression){
+					decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, timeinmus);
+				}else{
+					decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
+				}
 				//TODO check this time (originally was time for RAW and timeinmus for ZS)
 				//decodeSipmCharge(payload_ptr, channelMaskVec, TotalNumberOfSiPMs, FEBId, timeinmus);
 			}
