@@ -93,7 +93,7 @@ TEST_CASE("Test SiPM Channel Mask", "[sipm_chmask]") {
 				int16_t * ptr = (int16_t*) data;
 				rdata.sipmChannelMask(ptr, channelMaskVec, feb);
 				REQUIRE(channelMaskVec.size() == 1);
-				REQUIRE(channelMaskVec[0] == SipmIDtoPosition((feb+1)*1000 + ch));
+				REQUIRE(channelMaskVec[0] == SipmIDtoPosition((feb+1)*1000 + 63 - ch));
 
 				//Clean values
 				data[word] = 0;
@@ -132,7 +132,7 @@ TEST_CASE("Test SiPM Channel Mask", "[sipm_chmask]") {
 		data[3] = 0x5030;
 
 		const unsigned int nchannels = 8;
-		int channels[nchannels] = {11, 22, 33, 34, 49, 51, 58, 59};
+		int channels[nchannels] = {4, 5, 12, 14, 29, 30, 41, 52};
 
 		// Call function and test it
 		for(unsigned int feb=0; feb<nfebs; feb++){
