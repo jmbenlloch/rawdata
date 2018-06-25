@@ -950,7 +950,7 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 //			printf("timeinmus: %lf\n", timeinmus);
 //			printf("FT: %d\n", FT);
 
-			decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
+//			decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
 
 		}else{
 			//If not ZS check next FT value, if not expected (0xffff) end of data
