@@ -67,7 +67,8 @@ public:
   void computeNextFThm(int * nextFT, int * nextFThm, next::EventReader * reader);
 
   void decodeCharge(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int time);
-  void decodeChargePmtZS(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
+  void decodeChargeHotelPmtZS(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
+  void decodeChargeIndiaPmtZS(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
   int computeSipmTime(int16_t * &ptr, next::EventReader * reader);
   int sipmChannelMask(int16_t * &ptr, std::vector<int> &channelMaskVec, int febId);
   int pmtsChannelMask(int16_t chmask, std::vector<int> &channelMaskVec, int fecId, int FWVersion);

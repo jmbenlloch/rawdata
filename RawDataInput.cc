@@ -820,7 +820,7 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 //			printf("timeinmus: %lf\n", timeinmus);
 //			printf("FT: %d\n", FT);
 
-			decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
+			decodeChargeHotelPmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
 
 		}else{
 			//If not ZS check next FT value, if not expected (0xffff) end of data
@@ -880,6 +880,10 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 		int singleBuff = TriggerFT + FTBit*fMaxSample;
 		int trigDiff = BufferSamples - fPreTrgSamples;
 		fFirstFT = (singleBuff + trigDiff) % BufferSamples;
+		// Same correction as the one applied in computeNextFThm
+		if(fPreTrgSamples > TriggerFT){
+			fFirstFT -= 1;
+		}
 	}
 
 	int nextFT = -1; //At start we don't know next FT value
@@ -899,7 +903,6 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 	for(unsigned int i=0; i<pmtDgts_->size(); i++){
 		int elecID = (*pmtDgts_)[i].chID();
 		int pos = pmtPosition[elecID];
-//		printf("index: %d, elecID: %d, position: %d\n", i, elecID, pos);
 	}
 
 	///Write pedestal
@@ -920,10 +923,6 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 
 		//TODO ZS
 		if(ZeroSuppression){
-		//	for(int i=0; i<6; i++){
-		//		printf("buffer[%d] = 0x%04x\n", i, buffer[i]);
-		//	}
-
 			//stop condition
 			//printf("nextword = 0x%04x\n", *buffer);
 			if(FT == 0x0FFFF){
@@ -932,25 +931,17 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 
 			// Read new FThm bit and channel mask
 			int ftHighBit = (*buffer & 0x8000) >> 15;
-			ChannelMask = (*buffer & 0x0FF0) >> 4;
-			//printf("fthbit: %d, chmask: %d\n", ftHighBit, ChannelMask);
+			ChannelMask = (*buffer & 0x0FFF);
 			pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId, FWVersion);
 
-//			for(int i=0; i<fec_chmask[fFecId].size(); i++){
-//				printf("pmt channel: %d\n", fec_chmask[fFecId][i]);
-//			}
-
 			FT = FT + ftHighBit*fMaxSample - fFirstFT;
+
 			if ( FT < 0 ){
 				FT += BufferSamples;
 			}
 
 			timeinmus = FT * CLOCK_TICK_;
-
-//			printf("timeinmus: %lf\n", timeinmus);
-//			printf("FT: %d\n", FT);
-
-//			decodeChargePmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
+			decodeChargeIndiaPmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
 
 		}else{
 			//If not ZS check next FT value, if not expected (0xffff) end of data
@@ -967,12 +958,6 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 			decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, time);
 		}
 	}
-
-//	for(unsigned int i=0; i<pmtDgts_->size(); i++){
-//		if((*pmtDgts_)[i].active()){
-//			std::cout << (*pmtDgts_)[i].nSamples() << " hotel pmtDgts " << (*pmtDgts_)[i].chID() << "\t charge[0]: " << (*pmtDgts_)[i].waveform()[0] << std::endl;
-//		}
-//	}
 }
 
 int next::RawDataInput::setDualChannels(next::EventReader * reader){
@@ -1261,9 +1246,6 @@ int next::RawDataInput::pmtsChannelMask(int16_t chmask, std::vector<int> &channe
 		}
 	}
 
-//	for(unsigned int i=0; i<channelMaskVec.size(); i++){
-//		std::cout << "channel: " << channelMaskVec[i] << std::endl;
-//	}
 	//if(verbosity_>=2){
 	//	_log->debug("Channel mask is 0x{:04x}", temp);
 	//}
@@ -1400,12 +1382,12 @@ void next::RawDataInput::decodeCharge(int16_t* &ptr, next::DigitCollection &digi
 	}
 }
 
-void next::RawDataInput::decodeChargePmtZS(int16_t* &ptr, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int* positions, int time){
+void next::RawDataInput::decodeChargeHotelPmtZS(int16_t* &ptr, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int* positions, int time){
 	//Raw Mode
 	int Charge = 0;
 	int16_t * payloadCharge_ptr = ptr;
 
-	//We have 64 SiPM per FEB
+	//We have up to 12 PMTs per link
 	for(int chan=0; chan<channelMaskVec.size(); chan++){
 		// It is important to keep datatypes, memory allocation changes with them
 		int16_t * charge_ptr = (int16_t *) &Charge;
@@ -1413,7 +1395,7 @@ void next::RawDataInput::decodeChargePmtZS(int16_t* &ptr, next::DigitCollection 
 		memcpy(charge_ptr+1, payloadCharge_ptr, 2);
 		memcpy(charge_ptr, payloadCharge_ptr+1, 2);
 
-		//There are 8 channels but only 4 cases
+		//There are 12 channels but only 4 cases
 		switch(chan % 4){
 			case 0:
 				Charge = Charge >> 8;
@@ -1437,6 +1419,58 @@ void next::RawDataInput::decodeChargePmtZS(int16_t* &ptr, next::DigitCollection 
 
 		// Channel 3 and 7 do not add new words
 		if(chan != 2 && chan != 6){
+			ptr++;
+		}
+
+		if(verbosity_ >= 4){
+			_log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, Charge);
+		}
+
+		//Save data in Digits
+		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
+		dgt->waveform()[time] = Charge;
+	}
+	ptr++;
+}
+
+void next::RawDataInput::decodeChargeIndiaPmtZS(int16_t* &ptr, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int* positions, int time){
+	//Raw Mode
+	int Charge = 0;
+	int16_t * payloadCharge_ptr = ptr;
+
+	//We have 64 SiPM per FEB
+	for(int chan=0; chan<channelMaskVec.size(); chan++){
+		// It is important to keep datatypes, memory allocation changes with them
+		int16_t * charge_ptr = (int16_t *) &Charge;
+
+		memcpy(charge_ptr+1, payloadCharge_ptr, 2);
+		memcpy(charge_ptr, payloadCharge_ptr+1, 2);
+
+		//There are 8 channels but only 4 cases
+		switch(chan % 4){
+			case 0:
+				Charge = Charge >> 4;
+				Charge = Charge & 0x0fff;
+				break;
+			case 1:
+				Charge = Charge >> 8;
+				Charge = Charge & 0x0fff;
+				break;
+			case 2:
+				Charge = Charge >> 12;
+				Charge = Charge & 0x0fff;
+				break;
+			case 3:
+				Charge = Charge & 0x0fff;
+				break;
+		}
+		if(chan != 2 && chan != 6 && chan != 10){
+			payloadCharge_ptr+=1;
+		}
+
+		// Channel 3 and 7 do not add new words
+		//if(chan != 2 && chan != 6){
+		if(chan != 3 && chan != 7 && chan != 11){
 			ptr++;
 		}
 
