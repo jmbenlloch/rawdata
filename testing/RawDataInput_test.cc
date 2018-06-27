@@ -564,7 +564,7 @@ TEST_CASE("Decode PMT ZS charge", "[pmtzs_charge]") {
 		int16_t * ptr_end = (int16_t*) data;
 		ptr_end += nwords;
 		int time = 0;
-		rdata.decodeChargePmtZS(ptr, digits, channelMaskVec, positions, time);
+		rdata.decodeChargeHotelPmtZS(ptr, digits, channelMaskVec, positions, time);
 //		printf("ptrend: 0x%04x\n", *ptr);
 
 		//Check the pointer advanced nwords
