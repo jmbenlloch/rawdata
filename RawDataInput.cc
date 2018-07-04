@@ -924,8 +924,7 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 		//TODO ZS
 		if(ZeroSuppression){
 			//stop condition
-			//printf("nextword = 0x%04x\n", *buffer);
-			if(FT == 0x0FFFF){
+			if(FT == 0x0FFFF && *buffer == 0xFFFFFFFF && *(buffer+1) == 0xFFFFFFFF){
 				break;
 			}
 
