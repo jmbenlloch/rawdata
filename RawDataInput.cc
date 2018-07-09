@@ -371,7 +371,9 @@ bool next::RawDataInput::ReadDATEEvent()
 		if(eventReader_->TriggerCounter() != myheader->NbInRun()){
 			_logerr->error("EventID ({}) & TriggerCounter ({}) mismatch, possible loss of data in DATE in FEC {}", myheader->NbInRun(), eventReader_->TriggerCounter(), eventReader_->FecId());
 		}else{
-			_logerr->error("EventID ({}) & TriggerCounter ({}) ok in FEC {}", myheader->NbInRun(), eventReader_->TriggerCounter(), eventReader_->FecId());
+			if(verbosity_ >= 2){
+				_log->debug("EventID ({}) & TriggerCounter ({}) ok in FEC {}", myheader->NbInRun(), eventReader_->TriggerCounter(), eventReader_->FecId());
+			}
 		}
 
 		//FWVersion HOTEL
