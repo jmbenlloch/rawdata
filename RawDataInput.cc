@@ -368,6 +368,9 @@ bool next::RawDataInput::ReadDATEEvent()
 		eventReader_->ReadCommonHeader(payload_flip);
 		fwVersion = eventReader_->FWVersion();
 		int FECtype = eventReader_->FecType();
+		if(eventReader_->TriggerCounter() != myheader->NbInRun()){
+			_log->error("EventID ({}) & TriggerCounter ({}) mismatch, possible loss of data in DATE", eventReader_->TriggerCounter(), myheader->NbInRun());
+		}
 
 		//FWVersion HOTEL
 		if (fwVersion == 8){
