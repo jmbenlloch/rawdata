@@ -75,7 +75,7 @@ int next::RawDataInput::loadNextEvent(std::FILE* file, unsigned char ** buffer){
 	unsigned int readSize = this->readHeaderSize(file);
 	if ((readSize != headerSize) && readSize) { //if we read 0 is the end of the file
 		//TODO throw art::Exception(art::errors::FileReadError;)
-		//_log->error("Event header size of {} bytes read from data does not match expected size of {}", readSize, headerSize);
+		//_logerr->error("Event header size of {} bytes read from data does not match expected size of {}", readSize, headerSize);
 		return -1;
 	}
 
@@ -91,7 +91,7 @@ int next::RawDataInput::loadNextEvent(std::FILE* file, unsigned char ** buffer){
 			//bytes_read += fread(*buffer, 1, header.eventSize-(long)headerSize, file);
 			if (bytes_read != header.eventSize ){
 				//TODO throw art::Exception(art::errors::FileReadError)
-				_log->error("Unable to read event from file");
+				_logerr->error("Unable to read event from file");
 			}
 			evt_number = EVENT_ID_GET_NB_IN_RUN(header.eventId);
 			//std::cout << "evt number: " << evt_number << std::endl;
@@ -312,7 +312,7 @@ bool next::RawDataInput::ReadDATEEvent()
 
 				// check the magic word of the sub event
 				if (subEvent->eventMagic != EVENT_MAGIC_NUMBER) {
-					_log->error("NEXT1ELEventHandle::ReadDATEEvent, wrong magic number in sub event!");
+					_logerr->error("NEXT1ELEventHandle::ReadDATEEvent, wrong magic number in sub event!");
 					return false;
 				}
 
@@ -369,9 +369,9 @@ bool next::RawDataInput::ReadDATEEvent()
 		fwVersion = eventReader_->FWVersion();
 		int FECtype = eventReader_->FecType();
 		if(eventReader_->TriggerCounter() != myheader->NbInRun()){
-			_log->error("EventID ({}) & TriggerCounter ({}) mismatch, possible loss of data in DATE in FEC {}", myheader->NbInRun(), eventReader_->TriggerCounter(), eventReader_->FecId());
+			_logerr->error("EventID ({}) & TriggerCounter ({}) mismatch, possible loss of data in DATE in FEC {}", myheader->NbInRun(), eventReader_->TriggerCounter(), eventReader_->FecId());
 		}else{
-			_log->error("EventID ({}) & TriggerCounter ({}) ok in FEC {}", myheader->NbInRun(), eventReader_->TriggerCounter(), eventReader_->FecId());
+			_logerr->error("EventID ({}) & TriggerCounter ({}) ok in FEC {}", myheader->NbInRun(), eventReader_->TriggerCounter(), eventReader_->FecId());
 		}
 
 		//FWVersion HOTEL
