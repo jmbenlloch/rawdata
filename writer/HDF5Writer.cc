@@ -164,19 +164,6 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 				std::string sipm_name = std::string("sipmrwf");
 				_sipmrd = createWaveforms(group, sipm_name, 1, 1);
 			}
-
-			//Group for runinfo
-			std::string zs_group_name = std::string("/ZS");
-			hsize_t zsinfoG = createGroup(_file, zs_group_name);
-
-			std::string pmtzs_name = std::string("pmts");
-			hsize_t pmt_zs = createWaveform(zsinfoG, pmtzs_name, MAX_PMTs);
-
-			std::string blrzs_name = std::string("blrs");
-			hsize_t blr_zs = createWaveform(zsinfoG, blrzs_name, MAX_PMTs);
-
-			std::string sipmzs_name = std::string("sipms");
-			hsize_t sipm_zs = createWaveform(zsinfoG, sipmzs_name, MAX_SIPMs);
 		}
 	}
 
