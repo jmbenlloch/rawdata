@@ -62,7 +62,11 @@ void next::RawDataInput::countEvents(std::FILE* file, int * nevents, int * first
 	while(evt_number > 0){
 		(*nevents)++;
 		evt_number = loadNextEvent(file, &buffer);
-		free(buffer);
+		// If loadNextEvent enter in the first if, there is no malloc
+		// and then free will give a segfault
+		if (evt_number > 0){
+			free(buffer);
+		}
 	}
 }
 
@@ -76,6 +80,7 @@ int next::RawDataInput::loadNextEvent(std::FILE* file, unsigned char ** buffer){
 	if ((readSize != headerSize) && readSize) { //if we read 0 is the end of the file
 		//TODO throw art::Exception(art::errors::FileReadError;)
 		//_logerr->error("Event header size of {} bytes read from data does not match expected size of {}", readSize, headerSize);
+		printf("not malloc\n");
 		return -1;
 	}
 
