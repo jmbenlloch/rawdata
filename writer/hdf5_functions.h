@@ -18,6 +18,10 @@ typedef struct{
 } runinfo_t;
 
 typedef struct{
+	int trigger_type;
+} trigger_t;
+
+typedef struct{
 	int evt_number;
 	uint64_t timestamp;
 } evt_t;
@@ -25,7 +29,7 @@ typedef struct{
 typedef struct{
 	char param[STRLEN];
 	int value;
-} trigger_t;
+} triggerConf_t;
 
 
 hid_t createGroup(hid_t file, std::string& group);
@@ -39,10 +43,12 @@ hid_t createWaveform(hid_t group, std::string& dataset, hsize_t nsamples);
 hid_t createTable(hid_t group, std::string& table_name, hsize_t memtype);
 hid_t createEventType();
 hid_t createRunType();
+hid_t createTriggerConfType();
 hid_t createSensorType();
 hid_t createTriggerType();
 
 void writeEvent(evt_t * evtData, hid_t dataset, hid_t memtype, hsize_t evt_number);
 void writeRun(runinfo_t * runData, hid_t dataset, hid_t memtype, hsize_t evt_number);
 void writeSensor(sensor_t * sensorData, hid_t dataset, hid_t memtype, hsize_t sensor_number);
-void writeTrigger(trigger_t * triggerData, hid_t dataset, hid_t memtype, hsize_t index);
+void writeTriggerType(trigger_t * trigger, hid_t dataset, hid_t memtype, hsize_t evt_number);
+void writeTriggerConf(triggerConf_t * triggerData, hid_t dataset, hid_t memtype, hsize_t index);

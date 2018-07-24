@@ -80,7 +80,6 @@ int next::RawDataInput::loadNextEvent(std::FILE* file, unsigned char ** buffer){
 	if ((readSize != headerSize) && readSize) { //if we read 0 is the end of the file
 		//TODO throw art::Exception(art::errors::FileReadError;)
 		//_logerr->error("Event header size of {} bytes read from data does not match expected size of {}", readSize, headerSize);
-		printf("not malloc\n");
 		return -1;
 	}
 
@@ -460,6 +459,7 @@ void flipWords(unsigned int size, int16_t* in, int16_t* out){
 
 void next::RawDataInput::ReadIndiaTrigger(int16_t * buffer, unsigned int size){
 	int BufferSamples = eventReader_->BufferSamples();
+	triggerType_ = eventReader_->TriggerType();
 
 	if(verbosity_ >= 2){
 		for(int dbg=0;dbg<9;dbg++){
@@ -863,6 +863,7 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 
 	fFecId = eventReader_->FecId();
 	eventTime_ = eventReader_->TimeStamp();
+	triggerType_ = eventReader_->TriggerType();
 	int ZeroSuppression = eventReader_->ZeroSuppression();
 	int Baseline = eventReader_->Baseline();
 	fPreTrgSamples = eventReader_->PreTriggerSamples();
@@ -1632,7 +1633,7 @@ void next::RawDataInput::writeEvent(){
 	unsigned int event_number = date_header->NbInRun();
 	run_ = date_header->RunNb();
 
-	_writer->Write(pmts, blrs, extPmt, *sipmDgts_, trigOut_, triggerChans_, eventTime_, event_number, run_);
+	_writer->Write(pmts, blrs, extPmt, *sipmDgts_, trigOut_, triggerChans_, triggerType_, eventTime_, event_number, run_);
 }
 
 void freeWaveformMemory(next::DigitCollection * sensors){

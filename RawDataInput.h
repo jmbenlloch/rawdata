@@ -122,6 +122,7 @@ private:
 
   // To aid output.
   std::uint64_t eventTime_;
+  int triggerType_;
   std::vector<int> triggerChans_;
   std::vector<std::pair<std::string, int> > trigOut_;
   std::unique_ptr<next::EventHeaderCollection> headOut_;
