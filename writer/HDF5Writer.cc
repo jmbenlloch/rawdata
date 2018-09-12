@@ -125,16 +125,16 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 		//Create trigger group
 		std::string triggerGroup = std::string("/Trigger");
-		_triggerG = createGroup(_file, triggerGroup);
+		hsize_t triggerG = createGroup(_file, triggerGroup);
 
 		//Create triggerType table
 		hsize_t memtype_trigger = createTriggerType();
 		std::string trigger_name = std::string("trigger");
-		_triggerTable = createTable(_triggerG, trigger_name, memtype_trigger);
+		_triggerTable = createTable(triggerG, trigger_name, memtype_trigger);
 
 		// Trigger info
 		if(triggerInfo.size() > 0){
-			saveTriggerInfo(triggerInfo, _triggerG);
+			saveTriggerInfo(triggerInfo, triggerG);
 		}
 
 		//Create group
@@ -148,7 +148,7 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 			//Create trigger array
 			std::string trigger_name = std::string("events");
-			_triggerd = createWaveform(_triggerG, trigger_name, total_pmts);
+			_triggerd = createWaveform(triggerG, trigger_name, total_pmts);
 		}
 
 		//Create blr array

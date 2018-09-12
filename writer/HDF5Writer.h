@@ -55,7 +55,6 @@ namespace next{
 
 	//! Group for Run info
 	size_t _rinfoG;
-	size_t _triggerG;
 
 	//Datasets
 	size_t _pmtrd;
