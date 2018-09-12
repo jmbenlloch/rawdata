@@ -25,6 +25,10 @@ void ReadConfig::parse(){
 	_twofiles   = _obj.get("two_files", false).asBool();
 	_filein     = _obj["file_in"].asString();
 	_fileout    = _obj["file_out"].asString();
+	_fileout2   = _obj.get("file_out2", "").asString();
+	_trgCode1   = _obj.get("trg_code1", 1).asInt();
+	_trgCode2   = _obj.get("trg_code2", 9).asInt();
+	_splitTrg   = _obj.get("split_trg", false).asBool();
 	_nodb       = _obj.get("no_db", false).asBool();
 	_discard    = _obj.get("discard", true).asBool();
 	_copyEvts   = _obj.get("copy_evts", false).asBool();
@@ -36,9 +40,13 @@ void ReadConfig::parse(){
 
 	_log->info("File in: {}", _filein);
 	_log->info("File out: {}", _fileout);
+	_log->info("File out2: {}", _fileout2);
     _log->info("Max events: {}", _maxevents);
 	_log->info("Verbosity: {}", _verbosity);
 	_log->info("twofiles: {}", _twofiles);
+	_log->info("Split trigger: {}", _splitTrg);
+	_log->info("Trigger code 1: {}", _trgCode1);
+	_log->info("Trigger code 2: {}", _trgCode2);
 	_log->info("External trigger channel: {}", _extTrigger);
 	_log->info("Keep masked channels: {}", _nodb);
 	_log->info("Discard error events: {}", _discard);
