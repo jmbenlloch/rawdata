@@ -97,7 +97,7 @@ namespace next{
 	void sortSipms(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);
 	void save_elecids(std::vector<int>* elecids, std::vector<next::Digit*> &sorted_sensors);
 	void select_active_sensors(std::vector<next::Digit*> * active_sensors, DigitCollection& sensors);
-	void saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo);
+	void saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo, hid_t trigger_group);
 	void saveTriggerType(hid_t table, int triggerType);
 
     //! open file

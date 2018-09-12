@@ -126,7 +126,7 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 		// Trigger info
 		if(triggerInfo.size() > 0){
-			saveTriggerInfo(triggerInfo);
+			saveTriggerInfo(triggerInfo, _triggerG);
 		}
 
 		//Create group
@@ -253,10 +253,11 @@ void next::HDF5Writer::saveTriggerType(hid_t table, int triggerType){
 	writeTriggerType(&trigger, table, memtype_trigger, _ievt);
 }
 
-void next::HDF5Writer::saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo){
+void next::HDF5Writer::saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo,
+		hid_t trigger_group){
 	hsize_t memtype_trigger = createTriggerConfType();
 	std::string trigger_name = std::string("configuration");
-	hid_t trigger_table = createTable(_triggerG, trigger_name, memtype_trigger);
+	hid_t trigger_table = createTable(trigger_group, trigger_name, memtype_trigger);
 	for(int i=0; i<triggerInfo.size(); i++){
 		triggerConf_t triggerData;
 		memset(triggerData.param, 0, STRLEN);
