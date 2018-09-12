@@ -37,15 +37,28 @@ void next::HDF5Writer::Open(std::string fileName, std::string fileName2){
 				H5P_DEFAULT, H5P_DEFAULT );
 	}
 
+	_isOpen=true;
+}
+
+hid_t next::HDF5Writer::CreateRunInfoGroup(hsize_t file, size_t run_number){
 	//Group for runinfo
 	std::string run_group_name = std::string("/Run");
-	_rinfoG = createGroup(_file, run_group_name);
+	hsize_t rinfoG = createGroup(file, run_group_name);
 
+	//Create events table
 	std::string events_table_name = std::string("events");
 	_memtypeEvt = createEventType();
-	_eventsTable = createTable(_rinfoG, events_table_name, _memtypeEvt);
+	hid_t eventsTable = createTable(rinfoG, events_table_name, _memtypeEvt);
 
-	_isOpen=true;
+	//Create runInfo table and write run number
+	hsize_t memtype_run = createRunType();
+	std::string run_name = std::string("runInfo");
+	hid_t runinfo_table = createTable(rinfoG, run_name, memtype_run);
+	runinfo_t runinfo;
+	runinfo.run_number = (int) run_number;
+	writeRun(&runinfo, runinfo_table, memtype_run, _ievt);
+
+	return eventsTable;
 }
 
 void next::HDF5Writer::Close(){
@@ -66,16 +79,6 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		std::vector<int> triggerChans, int triggerType,
 		std::uint64_t timestamp, unsigned int evt_number, size_t run_number){
 	_log->debug("Writing event to HDF5 file");
-
-	//Write event number & timestamp
-	evt_t evtData;
-	evtData.evt_number = evt_number;
-	evtData.timestamp = timestamp;
-	writeEvent(&evtData, _eventsTable, _memtypeEvt, _ievt);
-
-//	for(int i=0; i<triggerChans.size(); i++){
-//		std::cout << "trigger channel: " << triggerChans[i] << std::endl;
-//	}
 
 	//Get number of sensors
 	int total_pmts  = _sensors.getNumberOfPmts();
@@ -118,12 +121,7 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		getSensorsFromDB(_config, _sensors, run_number, true);
 
 		//Run info
-		hsize_t memtype_run = createRunType();
-		std::string run_name = std::string("runInfo");
-		hid_t runinfo_table = createTable(_rinfoG, run_name, memtype_run);
-		runinfo_t runinfo;
-		runinfo.run_number = (int) run_number;
-		writeRun(&runinfo, runinfo_table, memtype_run, _ievt);
+		_eventsTable = CreateRunInfoGroup(_file, run_number);
 
 		//Create trigger group
 		std::string triggerGroup = std::string("/Trigger");
@@ -242,6 +240,12 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		WriteWaveform(extPmtdata, _extpmtrd, extPmtDatasize, _ievt);
 		delete[] extPmtdata;
 	}
+
+	//Write event number & timestamp
+	evt_t evtData;
+	evtData.evt_number = evt_number;
+	evtData.timestamp = timestamp;
+	writeEvent(&evtData, _eventsTable, _memtypeEvt, _ievt);
 
 	_ievt++;
 }

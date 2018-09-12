@@ -100,6 +100,8 @@ namespace next{
 	void saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo, hid_t trigger_group);
 	void saveTriggerType(hid_t table, int triggerType);
 
+	hid_t CreateRunInfoGroup(hsize_t file, size_t run_number);
+
     //! open file
     void Open(std::string filename, std::string filename2);
 
