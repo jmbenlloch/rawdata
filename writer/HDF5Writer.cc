@@ -331,7 +331,7 @@ void next::HDF5Writer::StoreTriggerChannels(std::vector<next::Digit*> sensors,
 			data[i] = 0;
 		}
 	}
-	WriteWaveform(data, _triggerd, nsensors, _ievt);
+	WriteWaveform(data, dataset, nsensors, _ievt);
 	delete[] data;
 }
 
