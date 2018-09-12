@@ -108,5 +108,6 @@ namespace next{
 
     //! write dst info into root file
     void WriteRunInfo();
+    void WriteRunInfo(size_t file);
   };
 }

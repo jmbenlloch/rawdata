@@ -395,6 +395,10 @@ void next::HDF5Writer::StoreSipmWaveforms(std::vector<next::Digit*> sensors,
 }
 
 void next::HDF5Writer::WriteRunInfo(){
+	WriteRunInfo(_file);
+}
+
+void next::HDF5Writer::WriteRunInfo(size_t file){
 	//Group for sensors
 	std::string sensors_group_name = std::string("/Sensors");
 	hsize_t sensorsG = createGroup(_file, sensors_group_name);
