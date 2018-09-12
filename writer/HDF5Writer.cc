@@ -8,7 +8,7 @@
 namespace spd = spdlog;
 
 next::HDF5Writer::HDF5Writer(ReadConfig * config) :
-    _file(0), _pmtrd(0), _ievt(0), _config(config)
+    _config(config)
 {
 
 	_log = spd::stdout_color_mt("writer");
@@ -16,34 +16,66 @@ next::HDF5Writer::HDF5Writer(ReadConfig * config) :
 		_log->set_level(spd::level::debug);
 	}
 	_nodb = config->no_db();
+
+	_ievt[0] = 0;
+	_ievt[1] = 0;
+	_splitTrg = config->splitTrg();
+	int trgCode1 = config->trgCode1();
+	int trgCode2 = config->trgCode2();
+	_triggerCodeToFile[trgCode1] = 0;
+	_triggerCodeToFile[trgCode2] = 1;
 }
 
 next::HDF5Writer::~HDF5Writer(){
 }
 
-void next::HDF5Writer::Open(std::string fileName){
+void next::HDF5Writer::Open(std::string fileName, std::string fileName2){
 	_log->debug("Opening output file {}", fileName);
-	_firstEvent= true;
+	_firstEvent[0] = true;
+	_firstEvent[1] = true;
 
-	_file =  H5Fcreate( fileName.c_str(), H5F_ACC_TRUNC,
+	_file[0] =  H5Fcreate( fileName.c_str(), H5F_ACC_TRUNC,
 			H5P_DEFAULT, H5P_DEFAULT );
 
-	//Group for runinfo
-	std::string run_group_name = std::string("/Run");
-	_rinfoG = createGroup(_file, run_group_name);
-
-	std::string events_table_name = std::string("events");
-	_memtypeEvt = createEventType();
-	_eventsTable = createTable(_rinfoG, events_table_name, _memtypeEvt);
+	if(_splitTrg){
+		_file[1] =  H5Fcreate( fileName2.c_str(), H5F_ACC_TRUNC,
+				H5P_DEFAULT, H5P_DEFAULT );
+	}
 
 	_isOpen=true;
+}
+
+hid_t next::HDF5Writer::CreateRunInfoGroup(hsize_t file, size_t run_number){
+	//Group for runinfo
+	std::string run_group_name = std::string("/Run");
+	hsize_t rinfoG = createGroup(file, run_group_name);
+
+	//Create events table
+	std::string events_table_name = std::string("events");
+	_memtypeEvt = createEventType();
+	hid_t eventsTable = createTable(rinfoG, events_table_name, _memtypeEvt);
+
+	//Create runInfo table and write run number
+	hsize_t memtype_run = createRunType();
+	std::string run_name = std::string("runInfo");
+	hid_t runinfo_table = createTable(rinfoG, run_name, memtype_run);
+	runinfo_t runinfo;
+	runinfo.run_number = (int) run_number;
+	writeRun(&runinfo, runinfo_table, memtype_run, 0);
+
+	return eventsTable;
 }
 
 void next::HDF5Writer::Close(){
   _isOpen=false;
 
   _log->debug("Closing output file");
-  H5Fclose(_file);
+  H5Fclose(_file[0]);
+
+  if(_splitTrg){
+	  _log->debug("Closing output file 2");
+	  H5Fclose(_file[1]);
+  }
 }
 
 void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
@@ -51,17 +83,20 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		std::vector<std::pair<std::string, int> > triggerInfo,
 		std::vector<int> triggerChans, int triggerType,
 		std::uint64_t timestamp, unsigned int evt_number, size_t run_number){
-	_log->debug("Writing event to HDF5 file");
 
-	//Write event number & timestamp
-	evt_t evtData;
-	evtData.evt_number = evt_number;
-	evtData.timestamp = timestamp;
-	writeEvent(&evtData, _eventsTable, _memtypeEvt, _ievt);
+	// Select file based on trigger type
+	int ifile = 0;
+	if(_splitTrg){
+		//Check if trigger type is not included in the map
+		if(_triggerCodeToFile.count(triggerType)){
+			ifile = _triggerCodeToFile[triggerType];
+		}else{
+			_log->error("Unexpected trigger type {} in event {}", triggerType, evt_number);
+			return;
+		}
+	}
 
-//	for(int i=0; i<triggerChans.size(); i++){
-//		std::cout << "trigger channel: " << triggerChans[i] << std::endl;
-//	}
+	_log->debug("Writing event {} to HDF5 file {}", evt_number, ifile);
 
 	//Get number of sensors
 	int total_pmts  = _sensors.getNumberOfPmts();
@@ -99,79 +134,77 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		extPmtDatasize = extPmt[0].nSamples();
 	}
 
-	if (_firstEvent){
+	// Query the DB only one time even if there are two files
+	if (_firstEvent[0] && _firstEvent[1]){
 		//Load sensors data from DB
 		getSensorsFromDB(_config, _sensors, run_number, true);
+	}
 
+	if (_firstEvent[ifile]){
 		//Run info
-		hsize_t memtype_run = createRunType();
-		std::string run_name = std::string("runInfo");
-		hid_t runinfo_table = createTable(_rinfoG, run_name, memtype_run);
-		runinfo_t runinfo;
-		runinfo.run_number = (int) run_number;
-		writeRun(&runinfo, runinfo_table, memtype_run, _ievt);
+		_eventsTable[ifile] = CreateRunInfoGroup(_file[ifile], run_number);
 
 		//Create trigger group
 		std::string triggerGroup = std::string("/Trigger");
-		_triggerG = createGroup(_file, triggerGroup);
+		hsize_t triggerG = createGroup(_file[ifile], triggerGroup);
 
 		//Create triggerType table
 		hsize_t memtype_trigger = createTriggerType();
 		std::string trigger_name = std::string("trigger");
-		_triggerTable = createTable(_triggerG, trigger_name, memtype_trigger);
+		_triggerTable[ifile] = createTable(triggerG, trigger_name, memtype_trigger);
 
 		// Trigger info
 		if(triggerInfo.size() > 0){
-			saveTriggerInfo(triggerInfo);
+			saveTriggerInfo(triggerInfo, triggerG);
 		}
 
 		//Create group
 		std::string groupName = std::string("/RD");
-		hid_t group = createGroup(_file, groupName);
+		hid_t group = createGroup(_file[ifile], groupName);
 
 		//Create pmt array
 		if (_hasPmts){
 			std::string pmt_name = std::string("pmtrwf");
-			_pmtrd = createWaveforms(group, pmt_name, total_pmts, pmtDatasize);
+			_pmtrd[ifile] = createWaveforms(group, pmt_name, total_pmts, pmtDatasize);
 
 			//Create trigger array
 			std::string trigger_name = std::string("events");
-			_triggerd = createWaveform(_triggerG, trigger_name, total_pmts);
+			_triggerd[ifile] = createWaveform(triggerG, trigger_name, total_pmts);
 		}
 
 		//Create blr array
 		if (_hasBlrs){
 			std::string blr_name = std::string("pmtblr");
-			_pmtblr = createWaveforms(group, blr_name, total_pmts, pmtDatasize);
+			_pmtblr[ifile] = createWaveforms(group, blr_name, total_pmts, pmtDatasize);
 		}
 
 		//Create sipms array
 		if (_hasSipms){
 			std::string sipm_name = std::string("sipmrwf");
-			_sipmrd = createWaveforms(group, sipm_name, total_sipms, sipmDatasize);
+			_sipmrd[ifile] = createWaveforms(group, sipm_name, total_sipms, sipmDatasize);
 		}
 
 		if(extPmt.size() > 0){
 			std::string extPmt_name = std::string("extpmt");
-			_extpmtrd = createWaveform(group, extPmt_name, extPmtDatasize);
+			_extpmtrd[ifile] = createWaveform(group, extPmt_name, extPmtDatasize);
 		}
 
-		_firstEvent = false;
+		_firstEvent[ifile] = false;
 
 		if(_nodb){
 			// Hack to be compatible with IC (always expects pmtrwf,
 			// pmtblr, sipmrwf...)
 			if(!_hasPmts){
 				std::string pmt_name = std::string("pmtrwf");
-				_pmtrd = createWaveforms(group, pmt_name, 1, 1);
+				_pmtrd[ifile] = createWaveforms(group, pmt_name, 1, 1);
 			}
 			if(!_hasBlrs){
 				std::string blr_name = std::string("pmtblr");
-				_pmtblr = createWaveforms(group, blr_name, 1, 1);
+				_pmtblr[ifile] = createWaveforms(group, blr_name, 1, 1);
 			}
 			if (!_hasSipms){
 				std::string sipm_name = std::string("sipmrwf");
-				_sipmrd = createWaveforms(group, sipm_name, 1, 1);
+				_sipmrd[ifile] = createWaveforms(group, sipm_name, 1, 1);
 			}
 		}
 	}
@@ -204,15 +237,19 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 	//Write waveforms
 	if (_hasPmts){
-		StorePmtWaveforms(sorted_pmts, total_pmts, pmtDatasize, _pmtrd);
-		StoreTriggerChannels(sorted_pmts, triggers, total_pmts, pmtDatasize, _triggerd);
-		saveTriggerType(_triggerTable, triggerType);
+		StorePmtWaveforms(sorted_pmts, total_pmts, pmtDatasize,
+			   	_pmtrd[ifile], _ievt[ifile]);
+		StoreTriggerChannels(sorted_pmts, triggers, total_pmts, pmtDatasize,
+			   	_triggerd[ifile], _ievt[ifile]);
+		saveTriggerType(_triggerTable[ifile], triggerType, _ievt[ifile]);
 	}
 	if (_hasBlrs){
-		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize, _pmtblr);
+		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize,
+			   	_pmtblr[ifile], _ievt[ifile]);
 	}
 	if (_hasSipms){
-		StoreSipmWaveforms(sorted_sipms, total_sipms, sipmDatasize, _sipmrd);
+		StoreSipmWaveforms(sorted_sipms, total_sipms, sipmDatasize,
+			   	_sipmrd[ifile], _ievt[ifile]);
 	}
 
 	if(extPmt.size() > 0){
@@ -225,11 +262,17 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 				index++;
 			}
 		}
-		WriteWaveform(extPmtdata, _extpmtrd, extPmtDatasize, _ievt);
+		WriteWaveform(extPmtdata, _extpmtrd[ifile], extPmtDatasize, _ievt[ifile]);
 		delete[] extPmtdata;
 	}
 
-	_ievt++;
+	//Write event number & timestamp
+	evt_t evtData;
+	evtData.evt_number = evt_number;
+	evtData.timestamp = timestamp;
+	writeEvent(&evtData, _eventsTable[ifile], _memtypeEvt, _ievt[ifile]);
+
+	_ievt[ifile]++;
 }
 
 void next::HDF5Writer::select_active_sensors(std::vector<next::Digit*> * active_sensors,
@@ -242,17 +285,18 @@ void next::HDF5Writer::select_active_sensors(std::vector<next::Digit*> * active_
 	}
 }
 
-void next::HDF5Writer::saveTriggerType(hid_t table, int triggerType){
+void next::HDF5Writer::saveTriggerType(hid_t table, int triggerType, int dset_idx){
 	hsize_t memtype_trigger = createTriggerType();
 	trigger_t trigger;
 	trigger.trigger_type = (int) triggerType;
-	writeTriggerType(&trigger, table, memtype_trigger, _ievt);
+	writeTriggerType(&trigger, table, memtype_trigger, dset_idx);
 }
 
-void next::HDF5Writer::saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo){
+void next::HDF5Writer::saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo,
+		hid_t trigger_group){
 	hsize_t memtype_trigger = createTriggerConfType();
 	std::string trigger_name = std::string("configuration");
-	hid_t trigger_table = createTable(_triggerG, trigger_name, memtype_trigger);
+	hid_t trigger_table = createTable(trigger_group, trigger_name, memtype_trigger);
 	for(int i=0; i<triggerInfo.size(); i++){
 		triggerConf_t triggerData;
 		memset(triggerData.param, 0, STRLEN);
@@ -321,7 +365,8 @@ void next::HDF5Writer::sortSipms(std::vector<next::Digit*> &sorted_sensors,
 }
 
 void next::HDF5Writer::StoreTriggerChannels(std::vector<next::Digit*> sensors,
-		std::vector<int> triggers, hsize_t nsensors, hsize_t datasize, hsize_t dataset){
+		std::vector<int> triggers, hsize_t nsensors, hsize_t datasize,
+	   	hsize_t dataset, int dset_idx){
 	short int *data = new short int[nsensors];
 	for(int i=0; i<sensors.size(); i++){
 		if(sensors[i]){
@@ -331,13 +376,13 @@ void next::HDF5Writer::StoreTriggerChannels(std::vector<next::Digit*> sensors,
 			data[i] = 0;
 		}
 	}
-	WriteWaveform(data, _triggerd, nsensors, _ievt);
+	WriteWaveform(data, dataset, nsensors, dset_idx);
 	delete[] data;
 }
 
 //For PMTs missing sensors are filled at the end
 void next::HDF5Writer::StorePmtWaveforms(std::vector<next::Digit*> sensors,
-	   	hsize_t nsensors, hsize_t datasize, hsize_t dataset){
+	   	hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx){
 	short int *data = new short int[nsensors * datasize];
 	int index = 0;
 	int activeSensors = 0;
@@ -358,13 +403,13 @@ void next::HDF5Writer::StorePmtWaveforms(std::vector<next::Digit*> sensors,
 			index++;
 	}
 
-	WriteWaveforms(data, dataset, nsensors, datasize, _ievt);
+	WriteWaveforms(data, dataset, nsensors, datasize, dset_idx);
 	delete[] data;
 }
 
 //For SIPMs missing sensors are filled in place
 void next::HDF5Writer::StoreSipmWaveforms(std::vector<next::Digit*> sensors,
-		hsize_t nsensors, hsize_t datasize, hsize_t dataset){
+		hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx){
 	short int *data = new short int[nsensors * datasize];
 	int index = 0;
 	int activeSensors = 0;
@@ -385,14 +430,21 @@ void next::HDF5Writer::StoreSipmWaveforms(std::vector<next::Digit*> sensors,
 		}
 	}
 
-	WriteWaveforms(data, dataset, nsensors, datasize, _ievt);
+	WriteWaveforms(data, dataset, nsensors, datasize, dset_idx);
 	delete[] data;
 }
 
 void next::HDF5Writer::WriteRunInfo(){
+	WriteRunInfo(_file[0]);
+	if(_splitTrg){
+		WriteRunInfo(_file[1]);
+	}
+}
+
+void next::HDF5Writer::WriteRunInfo(size_t file){
 	//Group for sensors
 	std::string sensors_group_name = std::string("/Sensors");
-	hsize_t sensorsG = createGroup(_file, sensors_group_name);
+	hsize_t sensorsG = createGroup(file, sensors_group_name);
 	hid_t memtype = createSensorType();
 
 	std::string pmt_table_name  = std::string("DataPMT");

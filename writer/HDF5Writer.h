@@ -31,12 +31,16 @@ namespace next{
   private:
 
     //! HDF5 file
-    size_t _file;
+    size_t _file[2];
+
+	//! Second file
+    bool _splitTrg;
+	std::map<int, int> _triggerCodeToFile;
 
 	bool _isOpen;
 
 	//! First event
-	bool _firstEvent;
+	bool _firstEvent[2];
 
 	bool _nodb;
 	std::vector<int> _pmt_elecids;
@@ -47,22 +51,18 @@ namespace next{
 	bool _hasBlrs;
 	bool _hasSipms;
 
-	//! Group for Run info
-	size_t _rinfoG;
-	size_t _triggerG;
-
 	//Datasets
-	size_t _pmtrd;
-	size_t _triggerd;
-	size_t _extpmtrd;
-	size_t _eventsTable;
-	size_t _triggerTable;
-	size_t _pmtblr;
-	size_t _sipmrd;
+	size_t _pmtrd[2];
+	size_t _triggerd[2];
+	size_t _extpmtrd[2];
+	size_t _eventsTable[2];
+	size_t _triggerTable[2];
+	size_t _pmtblr[2];
+	size_t _sipmrd[2];
 	size_t _memtypeEvt;
 
     //! counter for writen events
-    size_t _ievt;
+    size_t _ievt[2];
 
 	ReadConfig * _config;
 
@@ -81,9 +81,9 @@ namespace next{
     //! write event
     void Write(DigitCollection & pmts, DigitCollection& blrs, DigitCollection& extPmt, DigitCollection& sipms, std::vector<std::pair<std::string, int> > triggerInfo, std::vector<int> triggerChans, int triggerType, std::uint64_t timestamp, unsigned int evt_number, size_t run_number);
 
-	void StorePmtWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
-	void StoreSipmWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
-	void StoreTriggerChannels(std::vector<next::Digit*> sensors, std::vector<int> triggers, hsize_t nsensors, hsize_t datasize, hsize_t dataset);
+	void StorePmtWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx);
+	void StoreSipmWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx);
+	void StoreTriggerChannels(std::vector<next::Digit*> sensors, std::vector<int> triggers, hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx);
 
 	void sortPmts(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);
 	void sortPmtsNoDB(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);
@@ -91,16 +91,19 @@ namespace next{
 	void sortSipms(std::vector<next::Digit*> &sorted_sensors, DigitCollection &sensors);
 	void save_elecids(std::vector<int>* elecids, std::vector<next::Digit*> &sorted_sensors);
 	void select_active_sensors(std::vector<next::Digit*> * active_sensors, DigitCollection& sensors);
-	void saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo);
-	void saveTriggerType(hid_t table, int triggerType);
+	void saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo, hid_t trigger_group);
+	void saveTriggerType(hid_t table, int triggerType, int dset_idx);
+
+	hid_t CreateRunInfoGroup(hsize_t file, size_t run_number);
 
     //! open file
-    void Open(std::string filename);
+    void Open(std::string filename, std::string filename2);
 
     //! close file
     void Close();
 
     //! write dst info into root file
     void WriteRunInfo();
+    void WriteRunInfo(size_t file);
   };
 }
