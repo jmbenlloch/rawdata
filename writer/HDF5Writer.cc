@@ -8,7 +8,7 @@
 namespace spd = spdlog;
 
 next::HDF5Writer::HDF5Writer(ReadConfig * config) :
-    _file(0), _pmtrd(0), _ievt(0), _config(config)
+    _config(config)
 {
 
 	_log = spd::stdout_color_mt("writer");
@@ -17,6 +17,8 @@ next::HDF5Writer::HDF5Writer(ReadConfig * config) :
 	}
 	_nodb = config->no_db();
 
+	_ievt[0] = 0;
+	_ievt[1] = 0;
 	_splitTrg = config->splitTrg();
 	_trgCode1 = config->trgCode1();
 	_trgCode2 = config->trgCode2();
@@ -27,13 +29,14 @@ next::HDF5Writer::~HDF5Writer(){
 
 void next::HDF5Writer::Open(std::string fileName, std::string fileName2){
 	_log->debug("Opening output file {}", fileName);
-	_firstEvent= true;
+	_firstEvent[0] = true;
+	_firstEvent[1] = true;
 
-	_file =  H5Fcreate( fileName.c_str(), H5F_ACC_TRUNC,
+	_file[0] =  H5Fcreate( fileName.c_str(), H5F_ACC_TRUNC,
 			H5P_DEFAULT, H5P_DEFAULT );
 
 	if(_splitTrg){
-		_file2 =  H5Fcreate( fileName2.c_str(), H5F_ACC_TRUNC,
+		_file[1] =  H5Fcreate( fileName2.c_str(), H5F_ACC_TRUNC,
 				H5P_DEFAULT, H5P_DEFAULT );
 	}
 
@@ -56,7 +59,7 @@ hid_t next::HDF5Writer::CreateRunInfoGroup(hsize_t file, size_t run_number){
 	hid_t runinfo_table = createTable(rinfoG, run_name, memtype_run);
 	runinfo_t runinfo;
 	runinfo.run_number = (int) run_number;
-	writeRun(&runinfo, runinfo_table, memtype_run, _ievt);
+	writeRun(&runinfo, runinfo_table, memtype_run, 0);
 
 	return eventsTable;
 }
@@ -65,11 +68,11 @@ void next::HDF5Writer::Close(){
   _isOpen=false;
 
   _log->debug("Closing output file");
-  H5Fclose(_file);
+  H5Fclose(_file[0]);
 
   if(_splitTrg){
 	  _log->debug("Closing output file 2");
-	  H5Fclose(_file2);
+	  H5Fclose(_file[1]);
   }
 }
 
@@ -78,6 +81,10 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		std::vector<std::pair<std::string, int> > triggerInfo,
 		std::vector<int> triggerChans, int triggerType,
 		std::uint64_t timestamp, unsigned int evt_number, size_t run_number){
+
+	//TODO
+	int ifile = 0;
+
 	_log->debug("Writing event to HDF5 file");
 
 	//Get number of sensors
@@ -116,21 +123,21 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		extPmtDatasize = extPmt[0].nSamples();
 	}
 
-	if (_firstEvent){
+	if (_firstEvent[ifile]){
 		//Load sensors data from DB
 		getSensorsFromDB(_config, _sensors, run_number, true);
 
 		//Run info
-		_eventsTable = CreateRunInfoGroup(_file, run_number);
+		_eventsTable[ifile] = CreateRunInfoGroup(_file[ifile], run_number);
 
 		//Create trigger group
 		std::string triggerGroup = std::string("/Trigger");
-		hsize_t triggerG = createGroup(_file, triggerGroup);
+		hsize_t triggerG = createGroup(_file[ifile], triggerGroup);
 
 		//Create triggerType table
 		hsize_t memtype_trigger = createTriggerType();
 		std::string trigger_name = std::string("trigger");
-		_triggerTable = createTable(triggerG, trigger_name, memtype_trigger);
+		_triggerTable[ifile] = createTable(triggerG, trigger_name, memtype_trigger);
 
 		// Trigger info
 		if(triggerInfo.size() > 0){
@@ -139,51 +146,51 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 		//Create group
 		std::string groupName = std::string("/RD");
-		hid_t group = createGroup(_file, groupName);
+		hid_t group = createGroup(_file[ifile], groupName);
 
 		//Create pmt array
 		if (_hasPmts){
 			std::string pmt_name = std::string("pmtrwf");
-			_pmtrd = createWaveforms(group, pmt_name, total_pmts, pmtDatasize);
+			_pmtrd[ifile] = createWaveforms(group, pmt_name, total_pmts, pmtDatasize);
 
 			//Create trigger array
 			std::string trigger_name = std::string("events");
-			_triggerd = createWaveform(triggerG, trigger_name, total_pmts);
+			_triggerd[ifile] = createWaveform(triggerG, trigger_name, total_pmts);
 		}
 
 		//Create blr array
 		if (_hasBlrs){
 			std::string blr_name = std::string("pmtblr");
-			_pmtblr = createWaveforms(group, blr_name, total_pmts, pmtDatasize);
+			_pmtblr[ifile] = createWaveforms(group, blr_name, total_pmts, pmtDatasize);
 		}
 
 		//Create sipms array
 		if (_hasSipms){
 			std::string sipm_name = std::string("sipmrwf");
-			_sipmrd = createWaveforms(group, sipm_name, total_sipms, sipmDatasize);
+			_sipmrd[ifile] = createWaveforms(group, sipm_name, total_sipms, sipmDatasize);
 		}
 
 		if(extPmt.size() > 0){
 			std::string extPmt_name = std::string("extpmt");
-			_extpmtrd = createWaveform(group, extPmt_name, extPmtDatasize);
+			_extpmtrd[ifile] = createWaveform(group, extPmt_name, extPmtDatasize);
 		}
 
-		_firstEvent = false;
+		_firstEvent[ifile] = false;
 
 		if(_nodb){
 			// Hack to be compatible with IC (always expects pmtrwf,
 			// pmtblr, sipmrwf...)
 			if(!_hasPmts){
 				std::string pmt_name = std::string("pmtrwf");
-				_pmtrd = createWaveforms(group, pmt_name, 1, 1);
+				_pmtrd[ifile] = createWaveforms(group, pmt_name, 1, 1);
 			}
 			if(!_hasBlrs){
 				std::string blr_name = std::string("pmtblr");
-				_pmtblr = createWaveforms(group, blr_name, 1, 1);
+				_pmtblr[ifile] = createWaveforms(group, blr_name, 1, 1);
 			}
 			if (!_hasSipms){
 				std::string sipm_name = std::string("sipmrwf");
-				_sipmrd = createWaveforms(group, sipm_name, 1, 1);
+				_sipmrd[ifile] = createWaveforms(group, sipm_name, 1, 1);
 			}
 		}
 	}
@@ -216,15 +223,19 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 	//Write waveforms
 	if (_hasPmts){
-		StorePmtWaveforms(sorted_pmts, total_pmts, pmtDatasize, _pmtrd);
-		StoreTriggerChannels(sorted_pmts, triggers, total_pmts, pmtDatasize, _triggerd);
-		saveTriggerType(_triggerTable, triggerType);
+		StorePmtWaveforms(sorted_pmts, total_pmts, pmtDatasize,
+			   	_pmtrd[ifile], _ievt[ifile]);
+		StoreTriggerChannels(sorted_pmts, triggers, total_pmts, pmtDatasize,
+			   	_triggerd[ifile], _ievt[ifile]);
+		saveTriggerType(_triggerTable[ifile], triggerType, _ievt[ifile]);
 	}
 	if (_hasBlrs){
-		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize, _pmtblr);
+		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize,
+			   	_pmtblr[ifile], _ievt[ifile]);
 	}
 	if (_hasSipms){
-		StoreSipmWaveforms(sorted_sipms, total_sipms, sipmDatasize, _sipmrd);
+		StoreSipmWaveforms(sorted_sipms, total_sipms, sipmDatasize,
+			   	_sipmrd[ifile], _ievt[ifile]);
 	}
 
 	if(extPmt.size() > 0){
@@ -237,7 +248,7 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 				index++;
 			}
 		}
-		WriteWaveform(extPmtdata, _extpmtrd, extPmtDatasize, _ievt);
+		WriteWaveform(extPmtdata, _extpmtrd[ifile], extPmtDatasize, _ievt[ifile]);
 		delete[] extPmtdata;
 	}
 
@@ -245,9 +256,9 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	evt_t evtData;
 	evtData.evt_number = evt_number;
 	evtData.timestamp = timestamp;
-	writeEvent(&evtData, _eventsTable, _memtypeEvt, _ievt);
+	writeEvent(&evtData, _eventsTable[ifile], _memtypeEvt, _ievt[ifile]);
 
-	_ievt++;
+	_ievt[ifile]++;
 }
 
 void next::HDF5Writer::select_active_sensors(std::vector<next::Digit*> * active_sensors,
@@ -260,11 +271,11 @@ void next::HDF5Writer::select_active_sensors(std::vector<next::Digit*> * active_
 	}
 }
 
-void next::HDF5Writer::saveTriggerType(hid_t table, int triggerType){
+void next::HDF5Writer::saveTriggerType(hid_t table, int triggerType, int dset_idx){
 	hsize_t memtype_trigger = createTriggerType();
 	trigger_t trigger;
 	trigger.trigger_type = (int) triggerType;
-	writeTriggerType(&trigger, table, memtype_trigger, _ievt);
+	writeTriggerType(&trigger, table, memtype_trigger, dset_idx);
 }
 
 void next::HDF5Writer::saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo,
@@ -340,7 +351,8 @@ void next::HDF5Writer::sortSipms(std::vector<next::Digit*> &sorted_sensors,
 }
 
 void next::HDF5Writer::StoreTriggerChannels(std::vector<next::Digit*> sensors,
-		std::vector<int> triggers, hsize_t nsensors, hsize_t datasize, hsize_t dataset){
+		std::vector<int> triggers, hsize_t nsensors, hsize_t datasize,
+	   	hsize_t dataset, int dset_idx){
 	short int *data = new short int[nsensors];
 	for(int i=0; i<sensors.size(); i++){
 		if(sensors[i]){
@@ -350,13 +362,13 @@ void next::HDF5Writer::StoreTriggerChannels(std::vector<next::Digit*> sensors,
 			data[i] = 0;
 		}
 	}
-	WriteWaveform(data, dataset, nsensors, _ievt);
+	WriteWaveform(data, dataset, nsensors, dset_idx);
 	delete[] data;
 }
 
 //For PMTs missing sensors are filled at the end
 void next::HDF5Writer::StorePmtWaveforms(std::vector<next::Digit*> sensors,
-	   	hsize_t nsensors, hsize_t datasize, hsize_t dataset){
+	   	hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx){
 	short int *data = new short int[nsensors * datasize];
 	int index = 0;
 	int activeSensors = 0;
@@ -377,13 +389,13 @@ void next::HDF5Writer::StorePmtWaveforms(std::vector<next::Digit*> sensors,
 			index++;
 	}
 
-	WriteWaveforms(data, dataset, nsensors, datasize, _ievt);
+	WriteWaveforms(data, dataset, nsensors, datasize, dset_idx);
 	delete[] data;
 }
 
 //For SIPMs missing sensors are filled in place
 void next::HDF5Writer::StoreSipmWaveforms(std::vector<next::Digit*> sensors,
-		hsize_t nsensors, hsize_t datasize, hsize_t dataset){
+		hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx){
 	short int *data = new short int[nsensors * datasize];
 	int index = 0;
 	int activeSensors = 0;
@@ -404,18 +416,19 @@ void next::HDF5Writer::StoreSipmWaveforms(std::vector<next::Digit*> sensors,
 		}
 	}
 
-	WriteWaveforms(data, dataset, nsensors, datasize, _ievt);
+	WriteWaveforms(data, dataset, nsensors, datasize, dset_idx);
 	delete[] data;
 }
 
 void next::HDF5Writer::WriteRunInfo(){
-	WriteRunInfo(_file);
+	WriteRunInfo(_file[0]);
+	WriteRunInfo(_file[1]);
 }
 
 void next::HDF5Writer::WriteRunInfo(size_t file){
 	//Group for sensors
 	std::string sensors_group_name = std::string("/Sensors");
-	hsize_t sensorsG = createGroup(_file, sensors_group_name);
+	hsize_t sensorsG = createGroup(file, sensors_group_name);
 	hid_t memtype = createSensorType();
 
 	std::string pmt_table_name  = std::string("DataPMT");
