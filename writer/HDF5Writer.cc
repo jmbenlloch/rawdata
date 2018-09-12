@@ -25,12 +25,17 @@ next::HDF5Writer::HDF5Writer(ReadConfig * config) :
 next::HDF5Writer::~HDF5Writer(){
 }
 
-void next::HDF5Writer::Open(std::string fileName){
+void next::HDF5Writer::Open(std::string fileName, std::string fileName2){
 	_log->debug("Opening output file {}", fileName);
 	_firstEvent= true;
 
 	_file =  H5Fcreate( fileName.c_str(), H5F_ACC_TRUNC,
 			H5P_DEFAULT, H5P_DEFAULT );
+
+	if(_splitTrg){
+		_file2 =  H5Fcreate( fileName2.c_str(), H5F_ACC_TRUNC,
+				H5P_DEFAULT, H5P_DEFAULT );
+	}
 
 	//Group for runinfo
 	std::string run_group_name = std::string("/Run");
@@ -48,6 +53,11 @@ void next::HDF5Writer::Close(){
 
   _log->debug("Closing output file");
   H5Fclose(_file);
+
+  if(_splitTrg){
+	  _log->debug("Closing output file 2");
+	  H5Fclose(_file2);
+  }
 }
 
 void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,

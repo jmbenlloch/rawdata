@@ -28,7 +28,7 @@ int main(int argc, char* argv[]){
 
 	if(!config.copyEvts()){
 		next::HDF5Writer writer = next::HDF5Writer(&config);
-		writer.Open(config.file_out());
+		writer.Open(config.file_out(), config.file_out2());
 
 		next::RawDataInput rdata = next::RawDataInput(&config, &writer);
 		rdata.readFile(config.file_in());

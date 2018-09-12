@@ -101,7 +101,7 @@ namespace next{
 	void saveTriggerType(hid_t table, int triggerType);
 
     //! open file
-    void Open(std::string filename);
+    void Open(std::string filename, std::string filename2);
 
     //! close file
     void Close();
