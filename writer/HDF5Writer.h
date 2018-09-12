@@ -35,8 +35,7 @@ namespace next{
 
 	//! Second file
     bool _splitTrg;
-	int _trgCode1;
-	int _trgCode2;
+	std::map<int, int> _triggerCodeToFile;
 
 	bool _isOpen;
 

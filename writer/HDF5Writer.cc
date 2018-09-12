@@ -20,8 +20,10 @@ next::HDF5Writer::HDF5Writer(ReadConfig * config) :
 	_ievt[0] = 0;
 	_ievt[1] = 0;
 	_splitTrg = config->splitTrg();
-	_trgCode1 = config->trgCode1();
-	_trgCode2 = config->trgCode2();
+	int trgCode1 = config->trgCode1();
+	int trgCode2 = config->trgCode2();
+	_triggerCodeToFile[trgCode1] = 0;
+	_triggerCodeToFile[trgCode2] = 1;
 }
 
 next::HDF5Writer::~HDF5Writer(){
@@ -82,10 +84,19 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		std::vector<int> triggerChans, int triggerType,
 		std::uint64_t timestamp, unsigned int evt_number, size_t run_number){
 
-	//TODO
+	// Select file based on trigger type
 	int ifile = 0;
+	if(_splitTrg){
+		//Check if trigger type is not included in the map
+		if(_triggerCodeToFile.count(triggerType)){
+			ifile = _triggerCodeToFile[triggerType];
+		}else{
+			_log->error("Unexpected trigger type {} in event {}", triggerType, evt_number);
+			return;
+		}
+	}
 
-	_log->debug("Writing event to HDF5 file");
+	_log->debug("Writing event {} to HDF5 file {}", evt_number, ifile);
 
 	//Get number of sensors
 	int total_pmts  = _sensors.getNumberOfPmts();
@@ -123,10 +134,13 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		extPmtDatasize = extPmt[0].nSamples();
 	}
 
-	if (_firstEvent[ifile]){
+	// Query the DB only one time even if there are two files
+	if (_firstEvent[0] && _firstEvent[1]){
 		//Load sensors data from DB
 		getSensorsFromDB(_config, _sensors, run_number, true);
+	}
 
+	if (_firstEvent[ifile]){
 		//Run info
 		_eventsTable[ifile] = CreateRunInfoGroup(_file[ifile], run_number);
 
@@ -422,7 +436,9 @@ void next::HDF5Writer::StoreSipmWaveforms(std::vector<next::Digit*> sensors,
 
 void next::HDF5Writer::WriteRunInfo(){
 	WriteRunInfo(_file[0]);
-	WriteRunInfo(_file[1]);
+	if(_splitTrg){
+		WriteRunInfo(_file[1]);
+	}
 }
 
 void next::HDF5Writer::WriteRunInfo(size_t file){
