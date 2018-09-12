@@ -16,6 +16,10 @@ next::HDF5Writer::HDF5Writer(ReadConfig * config) :
 		_log->set_level(spd::level::debug);
 	}
 	_nodb = config->no_db();
+
+	_splitTrg = config->splitTrg();
+	_trgCode1 = config->trgCode1();
+	_trgCode2 = config->trgCode2();
 }
 
 next::HDF5Writer::~HDF5Writer(){

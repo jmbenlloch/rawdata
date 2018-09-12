@@ -33,6 +33,12 @@ namespace next{
     //! HDF5 file
     size_t _file;
 
+	//! Second file
+    bool _splitTrg;
+    size_t _file2;
+	int _trgCode1;
+	int _trgCode2;
+
 	bool _isOpen;
 
 	//! First event
