@@ -98,6 +98,13 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 	_log->debug("Writing event {} to HDF5 file {}", evt_number, ifile);
 
+	// Query the DB only one time even if there are two files
+	if (!_nodb && _firstEvent[0] && _firstEvent[1]){
+		std::cout << "connecting to db" << std::endl;
+		//Load sensors data from DB
+		getSensorsFromDB(_config, _sensors, run_number, true);
+	}
+
 	//Get number of sensors
 	int total_pmts  = _sensors.getNumberOfPmts();
 	int total_blrs  = _sensors.getNumberOfPmts();
@@ -134,11 +141,6 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		extPmtDatasize = extPmt[0].nSamples();
 	}
 
-	// Query the DB only one time even if there are two files
-	if (_firstEvent[0] && _firstEvent[1]){
-		//Load sensors data from DB
-		getSensorsFromDB(_config, _sensors, run_number, true);
-	}
 
 	if (_firstEvent[ifile]){
 		//Run info

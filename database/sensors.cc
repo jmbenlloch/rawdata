@@ -27,11 +27,19 @@ void next::Sensors::update_relations(int elecID, int sensorID){
 }
 
 int next::Sensors::getNumberOfPmts(){
-	return NPMT;
+	return _npmts;
 }
 
 int next::Sensors::getNumberOfSipms(){
-	return NSIPM;
+	return _nsipms;
+}
+
+void next::Sensors::setNumberOfPmts(int npmts){
+	_npmts = npmts;
+}
+
+void next::Sensors::setNumberOfSipms(int nsipms){
+	_nsipms = nsipms;
 }
 
 int SipmIDtoPosition(int id){

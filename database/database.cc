@@ -52,11 +52,24 @@ void getSensorsFromDB(ReadConfig * config, next::Sensors &sensors, int run_numbe
 	MYSQL_ROW row;
 
 	int elecid, sensorid;
+	//This id separates between pmts and sipms elecIDs
+	// Sipms starts at 1000, external pmt is 99
+	int threshold = 90;
+	int npmts  = 0;
+	int nsipms = 0;
 	while ((row = mysql_fetch_row(result))){
 		elecid   = std::stoi(row[0]);
 		sensorid = std::stoi(row[1]);
 		sensors.update_relations(elecid, sensorid);
+
+		if(elecid < threshold){
+			npmts += 1;
+		}else{
+			nsipms += 1;
+		}
 	}
+	sensors.setNumberOfPmts (npmts);
+	sensors.setNumberOfSipms(nsipms);
 
 	mysql_free_result(result);
 	mysql_close(con);

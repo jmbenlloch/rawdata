@@ -17,11 +17,16 @@ namespace next{
 			int getNumberOfPmts();
 			int getNumberOfSipms();
 
+			void setNumberOfPmts (int npmts);
+			void setNumberOfSipms(int nsipms);
+
 			void update_relations(int elecID, int sensorID);
 
 		private:
 			std::map<int, int> _elecToSensor;
 			std::map<int, int> _sensorToElec;
+			int _npmts;
+			int _nsipms;
 	};
 
 }
