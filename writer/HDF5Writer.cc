@@ -171,7 +171,9 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 			//Create trigger array
 			std::string trigger_name = std::string("events");
-			_triggerd[ifile] = createWaveform(triggerG, trigger_name, total_pmts);
+			if(triggerInfo.size() > 0){
+				_triggerd[ifile] = createWaveform(triggerG, trigger_name, total_pmts);
+			}
 		}
 
 		//Create blr array
@@ -241,9 +243,11 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	if (_hasPmts){
 		StorePmtWaveforms(sorted_pmts, total_pmts, pmtDatasize,
 			   	_pmtrd[ifile], _ievt[ifile]);
-		StoreTriggerChannels(sorted_pmts, triggers, total_pmts, pmtDatasize,
-			   	_triggerd[ifile], _ievt[ifile]);
-		saveTriggerType(_triggerTable[ifile], triggerType, _ievt[ifile]);
+		if(triggerInfo.size() > 0){
+			saveTriggerType(_triggerTable[ifile], triggerType, _ievt[ifile]);
+			StoreTriggerChannels(sorted_pmts, triggers, total_pmts, pmtDatasize,
+					             _triggerd[ifile], _ievt[ifile]);
+		}
 	}
 	if (_hasBlrs){
 		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize,
