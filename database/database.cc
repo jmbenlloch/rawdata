@@ -51,6 +51,8 @@ void getSensorsFromDB(ReadConfig * config, next::Sensors &sensors, int run_numbe
 
 	MYSQL_ROW row;
 
+	std::vector<int> sipms_sensor_ids;
+
 	int elecid, sensorid;
 	//This id separates between pmts and sipms elecIDs
 	// Sipms starts at 1000, external pmt is 99
@@ -66,10 +68,17 @@ void getSensorsFromDB(ReadConfig * config, next::Sensors &sensors, int run_numbe
 			npmts += 1;
 		}else{
 			nsipms += 1;
+			sipms_sensor_ids.push_back(sensorid);
 		}
 	}
 	sensors.setNumberOfPmts (npmts);
 	sensors.setNumberOfSipms(nsipms);
+
+	// sort Sipm ids and get positions in memory
+	std::sort(sipms_sensor_ids.begin(), sipms_sensor_ids.end());
+	for(int i=0; i<sipms_sensor_ids.size(); i++){
+		sensors.update_sipms_positions(sipms_sensor_ids[i], i);
+	}
 
 	mysql_free_result(result);
 	mysql_close(con);

@@ -21,10 +21,22 @@ int next::Sensors::sensorToElec(int sensorID){
 	return _sensorToElec[sensorID];
 }
 
+int next::Sensors::sipmIDtoPositionDB(int sensorID){
+	if (_sipmIDtoPosition.find(sensorID) == _sipmIDtoPosition.end()){
+		return -1;
+	}
+	return _sipmIDtoPosition[sensorID];
+}
+
 void next::Sensors::update_relations(int elecID, int sensorID){
 	_elecToSensor[elecID]   = sensorID;
 	_sensorToElec[sensorID] = elecID;
 }
+
+void next::Sensors::update_sipms_positions(int sensorID, int position){
+	_sipmIDtoPosition[sensorID] = position;
+}
+
 
 int next::Sensors::getNumberOfPmts(){
 	return _npmts;

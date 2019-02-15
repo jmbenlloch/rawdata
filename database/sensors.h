@@ -13,6 +13,7 @@ namespace next{
 
 			int elecToSensor(int elecID);
 			int sensorToElec(int sensorID);
+			int sipmIDtoPositionDB(int sensorID);
 
 			int getNumberOfPmts();
 			int getNumberOfSipms();
@@ -22,9 +23,13 @@ namespace next{
 
 			void update_relations(int elecID, int sensorID);
 
+			// compute position of sensors by sensorid from DB
+			void update_sipms_positions(int sensorID, int position);
+
 		private:
 			std::map<int, int> _elecToSensor;
 			std::map<int, int> _sensorToElec;
+			std::map<int, int> _sipmIDtoPosition;
 			int _npmts;
 			int _nsipms;
 	};

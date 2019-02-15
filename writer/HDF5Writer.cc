@@ -327,10 +327,12 @@ void next::HDF5Writer::sortPmts(std::vector<next::Digit*> &sorted_sensors,
 		DigitCollection &sensors){
 	std::fill(sorted_sensors.begin(), sorted_sensors.end(), (next::Digit*) 0);
 	int sensorid;
+	int count = 0;
 	for(unsigned int i=0; i<sensors.size(); i++){
 		sensorid = _sensors.elecToSensor(sensors[i].chID());
 		if(sensorid >= 0){
-			sorted_sensors[sensorid] = &(sensors[i]);
+			sorted_sensors[count] = &(sensors[i]);
+			count += 1;
 		}
 	}
 }
@@ -363,7 +365,8 @@ void next::HDF5Writer::sortSipms(std::vector<next::Digit*> &sorted_sensors,
 	int sensorid, position;
 	for(unsigned int i=0; i<sensors.size(); i++){
 		sensorid = _sensors.elecToSensor(sensors[i].chID());
-		position = SipmIDtoPosition(sensorid);
+//		position = SipmIDtoPosition(sensorid);
+		position = _sensors.sipmIDtoPositionDB(sensorid);
 		if(sensorid >= 0){
 			sorted_sensors[position] = &(sensors[i]);
 		}
