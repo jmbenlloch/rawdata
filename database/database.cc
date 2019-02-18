@@ -26,9 +26,9 @@ void getSensorsFromDB(ReadConfig * config, next::Sensors &sensors, int run_numbe
 	}
 
 	//Add run number
-	std::string sql = "SELECT ElecID, SensorID from ChannelMapping WHERE MinRun <= RUN and MaxRun >= RUN and SensorID NOT IN (SELECT SensorID FROM ChannelMask WHERE MinRun <= RUN and MaxRun >= RUN)";
+	std::string sql = "SELECT ElecID, SensorID from ChannelMapping WHERE MinRun <= RUN and MaxRun >= RUN and SensorID NOT IN (SELECT SensorID FROM ChannelMask WHERE MinRun <= RUN and MaxRun >= RUN) ORDER BY SensorID";
 	if(masked){
-		sql = "SELECT ElecID, SensorID FROM ChannelMapping WHERE MinRun <= RUN and MaxRun >= RUN";
+		sql = "SELECT ElecID, SensorID FROM ChannelMapping WHERE MinRun <= RUN and MaxRun >= RUN ORDER BY SensorID";
 	}
 
 	size_t start_pos = sql.find("RUN");

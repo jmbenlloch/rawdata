@@ -31,6 +31,12 @@ int next::Sensors::sipmIDtoPositionDB(int sensorID){
 void next::Sensors::update_relations(int elecID, int sensorID){
 	_elecToSensor[elecID]   = sensorID;
 	_sensorToElec[sensorID] = elecID;
+
+	if(sensorID < 90){
+		_sortedPmtIDs.push_back(sensorID);
+	}else{
+		_sortedSipmIDs.push_back(sensorID);
+	}
 }
 
 void next::Sensors::update_sipms_positions(int sensorID, int position){
@@ -44,6 +50,14 @@ int next::Sensors::getNumberOfPmts(){
 
 int next::Sensors::getNumberOfSipms(){
 	return _nsipms;
+}
+
+std::vector<int> next::Sensors::getSortedPmtsDB(){
+	return _sortedPmtIDs;
+}
+
+std::vector<int> next::Sensors::getSortedSipmsDB(){
+	return _sortedSipmIDs;
 }
 
 void next::Sensors::setNumberOfPmts(int npmts){

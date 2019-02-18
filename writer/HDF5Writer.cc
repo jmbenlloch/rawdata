@@ -481,9 +481,11 @@ void next::HDF5Writer::WriteRunInfo(size_t file){
 	if(!_nodb){
 		int sensor_count = 0;
 		if (_hasPmts){
-			for(int i=0; i<npmts; i++){
-				sensor.channel  = _sensors.sensorToElec(i);
-				sensor.sensorID = i;
+			std::vector<int> sortedPmtsDB = _sensors.getSortedPmtsDB();
+			for(int i=0; i<sortedPmtsDB.size(); i++){
+				int sensorID = sortedPmtsDB[i];
+				sensor.channel  = _sensors.sensorToElec(sensorID);
+				sensor.sensorID = sensorID;
 				if (sensor.channel >= 0){
 					writeSensor(&sensor, pmtsTable, memtype, sensor_count);
 					sensor_count++;
@@ -494,9 +496,11 @@ void next::HDF5Writer::WriteRunInfo(size_t file){
 		//Write BLRs
 		sensor_count = 0;
 		if (_hasBlrs){
-			for(int i=0; i<npmts; i++){
-				sensor.channel  = _sensors.sensorToElec(i);
-				sensor.sensorID = i;
+			std::vector<int> sortedPmtsDB = _sensors.getSortedPmtsDB();
+			for(int i=0; i<sortedPmtsDB.size(); i++){
+				int sensorID = sortedPmtsDB[i];
+				sensor.channel  = _sensors.sensorToElec(sensorID);
+				sensor.sensorID = sensorID;
 				if (sensor.channel >= 0){
 					writeSensor(&sensor, blrsTable, memtype, sensor_count);
 					sensor_count++;
@@ -504,13 +508,13 @@ void next::HDF5Writer::WriteRunInfo(size_t file){
 			}
 		}
 		//Write SIPMs
-		int sensorid;
 		sensor_count = 0;
 		if (_hasSipms){
-			for(int i=0; i<nsipms; i++){
-				sensorid = PositiontoSipmID(i);
-				sensor.channel  = _sensors.sensorToElec(sensorid);
-				sensor.sensorID = sensorid;
+			std::vector<int> sortedSipmsDB = _sensors.getSortedSipmsDB();
+			for(int i=0; i<sortedSipmsDB.size(); i++){
+				int sensorID = sortedSipmsDB[i];
+				sensor.channel  = _sensors.sensorToElec(sensorID);
+				sensor.sensorID = sensorID;
 				if (sensor.channel >= 0){
 					writeSensor(&sensor, sipmsTable, memtype, sensor_count);
 					sensor_count++;

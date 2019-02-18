@@ -1,6 +1,7 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 #include <map>
+#include <vector>
 
 #define NSIPM 1792
 #define NPMT 12
@@ -18,6 +19,9 @@ namespace next{
 			int getNumberOfPmts();
 			int getNumberOfSipms();
 
+			std::vector<int> getSortedPmtsDB();
+			std::vector<int> getSortedSipmsDB();
+
 			void setNumberOfPmts (int npmts);
 			void setNumberOfSipms(int nsipms);
 
@@ -30,6 +34,8 @@ namespace next{
 			std::map<int, int> _elecToSensor;
 			std::map<int, int> _sensorToElec;
 			std::map<int, int> _sipmIDtoPosition;
+			std::vector<int> _sortedPmtIDs;
+			std::vector<int> _sortedSipmIDs;
 			int _npmts;
 			int _nsipms;
 	};
