@@ -4,7 +4,7 @@ INCFLAGS = -I.  -D_GLIBCXX_USE_CXX11_ABI=0 -I$(CONDA_PREFIX)/include
 
 CXXFLAGS += '-DHDF5'
 
-all: config eventreader navel writer database decode link
+all: config eventreader navel writer database decode link huffman
 
 tests: 
 	$(CC) -o tests ReadConfig.o RawDataInput.o DATEEventHeader.o Digit.o EventReader.o HDF5Writer.o hdf5_functions.o database.o CopyEvents.o sensors.o testing/*cc $(CXXFLAGS) $(INCFLAGS)
@@ -14,6 +14,10 @@ link:
 
 decode:
 	$(CC) -c decode.cc $(CXXFLAGS) $(INCFLAGS)
+
+huffman:
+	$(CC) -c decode_huffman.cc $(CXXFLAGS) $(INCFLAGS)
+	$(CC) -g -o decode_huffman decode_huffman.o ReadConfig.o RawDataInput.o DATEEventHeader.o Digit.o EventReader.o HDF5Writer.o hdf5_functions.o database.o CopyEvents.o sensors.o $(CXXFLAGS) $(INCFLAGS)
 
 config:
 	$(CC) -c config/ReadConfig.cc $(CXXFLAGS) $(INCFLAGS)

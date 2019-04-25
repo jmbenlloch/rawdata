@@ -38,6 +38,9 @@ void ReadConfig::parse(){
 	_passwd     = _obj.get("pass", "readonly").asString();
 	_dbname     = _obj.get("dbname", "NEWDB").asString();
 
+	_huffman    = _obj.get("huffman", "").asString();
+	_npmts      = _obj.get("npmts", 12).asInt();
+
 	_log->info("File in: {}", _filein);
 	_log->info("File out: {}", _fileout);
 	_log->info("File out2: {}", _fileout2);
