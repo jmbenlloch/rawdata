@@ -36,6 +36,7 @@ class ReadConfig {
 
 		std::string huffman_tree();
 		int npmts();
+		int offset();
 
 
 	private:
@@ -64,6 +65,7 @@ class ReadConfig {
 
 		std::string _huffman;
 		int _npmts;
+		int _offset;
 };
 
 inline std::string ReadConfig::config(){return _filename;}
@@ -107,3 +109,4 @@ inline bool ReadConfig::copyEvts(){return _copyEvts;}
 
 inline std::string ReadConfig::huffman_tree(){return _huffman;}
 inline int ReadConfig::npmts(){return _npmts;}
+inline int ReadConfig::offset(){return _offset;}
