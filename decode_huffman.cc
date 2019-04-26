@@ -20,7 +20,6 @@ struct Huffman {
 };
 
 
-
 int read_data(unsigned char * data, int position){
 	int tmp = 0;
 
@@ -162,15 +161,32 @@ int read_data_file(const std::string &filein, unsigned char **data){
 					bitcount  = 7;
 					tmp       = 0;
 				}
-
-				// if (i > 512){
-				//     break;
-				// }
 			}
 		}
 		inFile.close();
 	}
 	return size;
+}
+
+
+// current_bit will be modified to set the new position
+int decode_compressed_value(int previous_value, int data, int * start_bit, Huffman * huffman){
+	// Check data type (0 uncompressed, 1 huffman)
+	int current_bit = *start_bit;
+	int type = CheckBit(data, current_bit);
+	current_bit -= 1;
+
+	int wfvalue;
+	if(type == 0){
+		wfvalue = (data >> (current_bit - 11)) & 0x0FFF;
+		current_bit -= 12;
+	}else{
+		current_bit = decode_huffman(huffman, data, current_bit, &wfvalue);
+		wfvalue = previous_value + wfvalue;
+	}
+	*start_bit = current_bit;
+
+	return wfvalue;
 }
 
 
@@ -187,11 +203,10 @@ int main(int argc, char* argv[]){
 	std::string filename = std::string(argv[1]);
 	ReadConfig config = ReadConfig(filename);
 
-	std::cout << "file in: "      << config.file_in() << std::endl;
-	std::cout << "file out: "      << config.file_out() << std::endl;
-	std::cout << "huffman tree: " << config.huffman_tree() << std::endl;
-	std::cout << "npmts: "        << config.npmts() << std::endl;
-
+	if(config.verbosity() > 0){
+		console->info("Huffman tree: {}", config.huffman_tree());
+		console->info("npmts: {}", config.npmts());
+	}
 
 	// Load waveforms data from txt file
 	unsigned char * data;
@@ -203,23 +218,26 @@ int main(int argc, char* argv[]){
 	huffman.next[1] = NULL;
 
 	read_huffman_file(config.huffman_tree(), &huffman);
-	printf("Huffman tree:\n");
-	print_huffman(&huffman, 1);
 
+	if(config.verbosity() > 0){
+		console->info("Huffman tree:");
+		print_huffman(&huffman, 1);
+	}
 
 	// Start processing data
 	int itmp = 0;
 
 	int position_dec = 0;
 	int current_bit = 31 - config.offset();
-	printf("current_bit: %d\n", current_bit);
 
-	for(int i=0; i<32; i++){
-		printf("data[%d]: %02x", i, data[i*4  ]);
-		printf("%02x",              data[i*4+1]);
-		printf("%02x",              data[i*4+2]);
-		printf("%02x\n",            data[i*4+3]);
-	}
+	if(config.verbosity() > 1){
+		for(int i=0; i<32; i++){
+			printf("data[%d]: %02x", i, data[i*4  ]);
+			printf("%02x",              data[i*4+1]);
+			printf("%02x",              data[i*4+2]);
+			printf("%02x\n",            data[i*4+3]);
+		}
+	 }
 
 	int values[12];
 
@@ -239,28 +257,8 @@ int main(int argc, char* argv[]){
 		}
 
 		itmp = read_data(data, position_dec);
-
-		int type = CheckBit(itmp, current_bit);
-		current_bit -= 1;
-		// printf("current_bit: %d\n", current_bit);
-        //
-		// printf("type: %d\n", type);
-
-		int wfvalue;
-		if(type == 0){
-			// printf("current_bit: %d\n", current_bit);
-			wfvalue = (itmp >> (current_bit - 11)) & 0x0FFF;
-			current_bit -= 12;
-
-			values[i % 12] = wfvalue;
-		}else{
-			current_bit = decode_huffman(&huffman, itmp, current_bit, &wfvalue);
-			values[i % 12] = values[i % 12] + wfvalue;
-		}
-
-		// printf("current_bits: %d\n", current_bit);
-        //
-		// printf("Value: 0x%04x, %d\n", wfvalue, wfvalue);
+		int wfvalue = decode_compressed_value(values[i%12], itmp, &current_bit, &huffman);
+		values[i%12] = wfvalue;
 
 		if(i%12 == 0){
 			printf("\n");
