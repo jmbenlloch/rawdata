@@ -241,6 +241,8 @@ int main(int argc, char* argv[]){
 
 	int values[12];
 
+    std::ofstream out(config.file_out());
+
 	//for(int i=0; i<128; i++){
 	for(int i=0; i<12*400000; i++){
 		// printf("\n\n new value, i: %d\n", i);
@@ -262,11 +264,15 @@ int main(int argc, char* argv[]){
 
 		if(i%12 == 0){
 			printf("\n");
+			out << std::endl;
 		}
 		//printf("wf[%d]: %d\n", i%12, values[i%12]);
 		printf("%d\t", values[i%12]);
+		out << values[i%12] << "\t";
 
 	}
+
+    out.close();
 
 	free(data);
 
