@@ -112,6 +112,68 @@ int parse_huffman_line(std::string &line, Huffman * huffman){
 }
 
 
+void read_huffman_file(std::string filein, Huffman * huffman){
+	std::ifstream inFile;
+	std::string line;
+	inFile.open(filein);
+
+	if (inFile.is_open()){
+		while(getline(inFile, line)) {
+			//printf("\n\nline: %s\n", line.c_str());
+			parse_huffman_line(line, huffman);
+		}
+	}
+}
+
+
+int read_data_file(const std::string &filein, unsigned char **data){
+	std::ifstream inFile;
+	std::string line;
+	inFile.open(filein);
+
+	int size = 0;
+	int position = 0;
+	int bitcount = 7;
+	unsigned char tmp = 0;
+
+	if (inFile.is_open()){
+		while(getline(inFile, line)) {
+			//			std::cout << line << std::endl;
+			size = line.size();
+			std::cout << "size: " << size << std::endl;
+			*data = (unsigned char*) malloc(size);
+			memset(*data, 0, size);
+
+			for(int i=0; i<size; i++){
+				//				std::cout << line[i] << std::endl;
+
+				unsigned char value = line[i] - 0x30; // convert ASCII to int
+				//				printf("line[%d]: %c, %d\n", i, line[i], value);
+
+				tmp = tmp | (value << bitcount);
+				bitcount -= 1;
+				//				printf("tmp: 0x%04x\n", tmp);
+
+				if (bitcount < 0){
+					(*data)[position] = tmp;
+
+					// printf("val: 0x%02x\n", tmp);
+					position += 1;
+					bitcount  = 7;
+					tmp       = 0;
+				}
+
+				// if (i > 512){
+				//     break;
+				// }
+			}
+		}
+		inFile.close();
+	}
+	return size;
+}
+
+
 int main(int argc, char* argv[]){
 	auto console = spd::stdout_color_mt("console");
 	console->info("RawDataInput started");
@@ -130,72 +192,23 @@ int main(int argc, char* argv[]){
 	std::cout << "huffman tree: " << config.huffman_tree() << std::endl;
 	std::cout << "npmts: "        << config.npmts() << std::endl;
 
-	std::ifstream inFile;
-	std::string line;
-	inFile.open(config.file_in());
 
+	// Load waveforms data from txt file
 	unsigned char * data;
-	int size = 0;
-	int position = 0;
-	int bitcount = 7;
-	unsigned char tmp = 0;
+	int size = read_data_file(config.file_in(), &data);
 
-	if (inFile.is_open()){
-		while(getline(inFile, line)) {
-//			std::cout << line << std::endl;
-			size = line.size();
-			std::cout << "size: " << size << std::endl;
-			data = (unsigned char*) malloc(size);
-			memset(data, 0, size);
-
-			for(int i=0; i<size; i++){
-//				std::cout << line[i] << std::endl;
-
-				unsigned char value = line[i] - 0x30; // convert ASCII to int
-//				printf("line[%d]: %c, %d\n", i, line[i], value);
-
-				tmp = tmp | (value << bitcount);
-				bitcount -= 1;
-//				printf("tmp: 0x%04x\n", tmp);
-
-				if (bitcount < 0){
-					data[position] = tmp;
-
-					// printf("val: 0x%02x\n", tmp);
-					position += 1;
-					bitcount  = 7;
-					tmp       = 0;
-				}
-
-				// if (i > 512){
-				//     break;
-				// }
-			}
-		}
-		inFile.close();
-	}
-
-
+	// Create Huffman tree
 	Huffman huffman;
 	huffman.next[0] = NULL;
 	huffman.next[1] = NULL;
 
-	// read huffman tree
-	inFile.open(config.huffman_tree());
-	if (inFile.is_open()){
-		while(getline(inFile, line)) {
-//			printf("\n\nline: %s\n", line.c_str());
-			parse_huffman_line(line, &huffman);
-		}
-	}
-
-	printf("\n\n\nHuffman tree:\n");
+	read_huffman_file(config.huffman_tree(), &huffman);
+	printf("Huffman tree:\n");
 	print_huffman(&huffman, 1);
 
 
 	// Start processing data
 	int itmp = 0;
-	unsigned char * payload_ptr = data;
 
 	int position_dec = 0;
 	int current_bit = 31 - config.offset();
@@ -225,7 +238,7 @@ int main(int argc, char* argv[]){
 
 		}
 
-		itmp = read_data(payload_ptr, position_dec);
+		itmp = read_data(data, position_dec);
 
 		int type = CheckBit(itmp, current_bit);
 		current_bit -= 1;
@@ -256,6 +269,8 @@ int main(int argc, char* argv[]){
 		printf("%d\t", values[i%12]);
 
 	}
+
+	free(data);
 
 	return 0;
 }
