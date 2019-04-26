@@ -239,7 +239,8 @@ int main(int argc, char* argv[]){
 		}
 	 }
 
-	int values[12];
+	int npmts = config.npmts();
+	int * values = (int *) malloc(sizeof(int) * npmts);
 
     std::ofstream out(config.file_out());
 
@@ -259,22 +260,19 @@ int main(int argc, char* argv[]){
 		}
 
 		itmp = read_data(data, position_dec);
-		int wfvalue = decode_compressed_value(values[i%12], itmp, &current_bit, &huffman);
-		values[i%12] = wfvalue;
+		int wfvalue = decode_compressed_value(values[i % npmts], itmp, &current_bit, &huffman);
+		values[i % npmts] = wfvalue;
 
-		if(i%12 == 0){
-			printf("\n");
+		out << values[i % npmts] << "\t";
+		if((i+1) % npmts == 0){
 			out << std::endl;
 		}
-		//printf("wf[%d]: %d\n", i%12, values[i%12]);
-		printf("%d\t", values[i%12]);
-		out << values[i%12] << "\t";
-
 	}
 
     out.close();
 
 	free(data);
+	free(values);
 
 	return 0;
 }
