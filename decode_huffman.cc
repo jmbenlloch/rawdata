@@ -158,6 +158,7 @@ int read_data_file(const std::string &filein, unsigned char **data){
 
 					// printf("val: 0x%02x\n", tmp);
 					position += 1;
+					// printf("position: %d, i: %d\n", position, i);
 					bitcount  = 7;
 					tmp       = 0;
 				}
@@ -165,6 +166,7 @@ int read_data_file(const std::string &filein, unsigned char **data){
 		}
 		inFile.close();
 	}
+	printf("position: %d\n", position);
 	return size;
 }
 
@@ -225,13 +227,14 @@ int main(int argc, char* argv[]){
 	}
 
 	// Start processing data
-	int itmp = 0;
+	int payload = 0;
 
 	int position_dec = 0;
 	int current_bit = 31 - config.offset();
 
 	if(config.verbosity() > 1){
-		for(int i=0; i<32; i++){
+		// for(int i=0; i<32; i++){
+		for(int i=0; i<size/8+1; i++){
 			printf("data[%d]: %02x", i, data[i*4  ]);
 			printf("%02x",              data[i*4+1]);
 			printf("%02x",              data[i*4+2]);
@@ -245,8 +248,10 @@ int main(int argc, char* argv[]){
     std::ofstream out(config.file_out());
 
 	//for(int i=0; i<128; i++){
-	for(int i=0; i<12*400000; i++){
-		// printf("\n\n new value, i: %d\n", i);
+	//for(int i=0; i<12*400000; i++){
+	int i=0;
+	while(position_dec < (size/8)){
+		printf("position_dec: %d\n", position_dec);
 
 		// second half of the word -> load next one
 		if(current_bit < 16){
@@ -259,14 +264,18 @@ int main(int argc, char* argv[]){
 
 		}
 
-		itmp = read_data(data, position_dec);
-		int wfvalue = decode_compressed_value(values[i % npmts], itmp, &current_bit, &huffman);
+		payload = read_data(data, position_dec);
+
+		printf("%d:\t 0x%04x\n", i, payload);
+
+		int wfvalue = decode_compressed_value(values[i % npmts], payload, &current_bit, &huffman);
 		values[i % npmts] = wfvalue;
 
 		out << values[i % npmts] << "\t";
 		if((i+1) % npmts == 0){
 			out << std::endl;
 		}
+		i += 1;
 	}
 
     out.close();
