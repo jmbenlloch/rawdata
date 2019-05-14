@@ -150,6 +150,8 @@ private:
   int fwVersionPmt;
 
   bool fileError_, eventError_;
+  ReadConfig * config_;
+  Huffman huffman_;
 
 };
 
