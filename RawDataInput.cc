@@ -882,17 +882,17 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 	int ErrorBit = eventReader_->GetErrorBit();
 	int FWVersion = eventReader_->FWVersion();
 
-//	if (ZeroSuppression){
-	if ((!huffman_.next[0]) && (!huffman_.next[1])){
-		auto myheader = (*headOut_).rbegin();
-		run_ = myheader->RunNb();
-		getHuffmanFromDB(config_, &huffman_, run_);
-		if( verbosity_ >= 1 ){
-			_log->debug("Huffman tree:\n");
-			print_huffman(_log, &huffman_, 1);
+	if (ZeroSuppression){
+		if ((!huffman_.next[0]) && (!huffman_.next[1])){
+			auto myheader = (*headOut_).rbegin();
+			run_ = myheader->RunNb();
+			getHuffmanFromDB(config_, &huffman_, run_);
+			if( verbosity_ >= 1 ){
+				_log->debug("Huffman tree:\n");
+				print_huffman(_log, &huffman_, 1);
+			}
 		}
 	}
-// }
 
 	if (ErrorBit){
 		auto myheader = (*headOut_).rbegin();
