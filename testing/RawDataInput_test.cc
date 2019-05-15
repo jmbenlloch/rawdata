@@ -656,7 +656,6 @@ TEST_CASE("Decode compressed pmts", "[decode_compressed]") {
 	huffman.next[1] = NULL;
 
 	int run=10;
-	//TODO define config somehow...
 	std::string host = "neutrinos1.ific.uv.es";
 	std::string user = "nextreader";
 	std::string pass = "readonly";
@@ -664,8 +663,7 @@ TEST_CASE("Decode compressed pmts", "[decode_compressed]") {
 	ReadConfig config = ReadConfig(host, user, pass, db);
 	getHuffmanFromDB(&config, &huffman, run);
 
-	// printf_huffman(huffman, 1);
-	printf_huffman(&huffman, 1);
+	// printf_huffman(&huffman, 1);
 
 	//Create DigitCollection, create Digits and positions vectors
 	next::DigitCollection digits;
@@ -684,7 +682,7 @@ TEST_CASE("Decode compressed pmts", "[decode_compressed]") {
 	int current_bit = 31;
 
 	for(int time=0; time<bufferSamples; time++){
-		printf("time: %d\n\n", time);
+		// printf("time: %d\n\n", time);
 		rdata.decodeChargeIndiaPmtCompressed(ptr, &current_bit, digits, &huffman, channelMaskVec, positions, time);
 	}
 

@@ -867,7 +867,6 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 }
 
 void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
-	// double timeinmus = 0.;
 	int time = -1;
 	int current_bit = 31;
 
@@ -910,17 +909,6 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 
 	///Reading the payload
 	fFirstFT = TriggerFT;
-	// timeinmus = 0 - CLOCK_TICK_;
-	// if(ZeroSuppression){
-	//     int singleBuff = TriggerFT + FTBit*fMaxSample;
-	//     int trigDiff = BufferSamples - fPreTrgSamples;
-	//     fFirstFT = (singleBuff + trigDiff) % BufferSamples;
-	//     // Same correction as the one applied in computeNextFThm
-	//     if(fPreTrgSamples > TriggerFT){
-	//         fFirstFT -= 1;
-	//     }
-	// }
-
 	int nextFT = -1; //At start we don't know next FT value
 	int nextFThm = -1;
 
@@ -952,34 +940,13 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 		// timeinmus = timeinmus + CLOCK_TICK_;
 		time++;
 
-		//TODO ZS
 		if(ZeroSuppression){
-			//stop condition TODO
-			// if(FT == 0x0FFFF && *buffer == 0xFFFFFFFF && *(buffer+1) == 0xFFFFFFFF){
-			//     break;
-			// }
-
-			// Read new FThm bit and channel mask
-			// int ftHighBit = (*buffer & 0x8000) >> 15;
-			// ChannelMask = (*buffer & 0x0FFF);
-			// pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId, FWVersion);
-
-			// ft = ft + fthighbit*fmaxsample - ffirstft;
-            //
-			// if ( ft < 0 ){
-			//     FT += BufferSamples;
-			// }
-            //
-			// timeinmus = FT * CLOCK_TICK_;
-			// decodeChargeIndiaPmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
-
 			if (time == BufferSamples){
 				break;
 			}
 			decodeChargeIndiaPmtCompressed(buffer, &current_bit, *pmtDgts_, &huffman_, fec_chmask[fFecId], pmtPosition, time);
 		}else{
 			int FT = *buffer & 0x0FFFF;
-			//printf("FT: 0x%04x\n", FT);
 			buffer++;
 
 			//If not ZS check next FT value, if not expected (0xffff) end of data
@@ -992,7 +959,6 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 					break;
 				}
 			}
-			//decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, timeinmus);
 			decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, time);
 		}
 	}
@@ -1383,11 +1349,6 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 		memcpy(charge_ptr+1, ptr  , 2);
 		memcpy(charge_ptr  , ptr+1, 2);
 
-		// printf("data: 0x%04x\n", data);
-		// printf("ptr[0]: 0x%04x\n", ptr[0]);
-		// printf("ptr[1]: 0x%04x\n", ptr[1]);
-		// printf("current_bit: %d\n", *current_bit);
-
 		// Get previous value
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
 		int previous = 0;
@@ -1396,8 +1357,6 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 		}
 
 		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
-		// printf("current_bit: %d\n", *current_bit);
-		// printf("wfvalue: %d\n", wfvalue);
 
 		if(verbosity_ >= 4){
 			 _log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, wfvalue);
