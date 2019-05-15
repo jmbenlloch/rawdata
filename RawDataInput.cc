@@ -949,12 +949,8 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 	//2x size per link and there are manu FFFF at the end, which are the actual
 	//stop condition...
 	while (true){
-		int FT = *buffer & 0x0FFFF;
-		//printf("FT: 0x%04x\n", FT);
-
 		// timeinmus = timeinmus + CLOCK_TICK_;
 		time++;
-		buffer++;
 
 		//TODO ZS
 		if(ZeroSuppression){
@@ -977,8 +973,15 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 			// timeinmus = FT * CLOCK_TICK_;
 			// decodeChargeIndiaPmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
 
+			if (time == BufferSamples){
+				break;
+			}
 			decodeChargeIndiaPmtCompressed(buffer, &current_bit, *pmtDgts_, &huffman_, fec_chmask[fFecId], pmtPosition, time);
 		}else{
+			int FT = *buffer & 0x0FFFF;
+			//printf("FT: 0x%04x\n", FT);
+			buffer++;
+
 			//If not ZS check next FT value, if not expected (0xffff) end of data
 			if(!ZeroSuppression){
 				computeNextFThm(&nextFT, &nextFThm, eventReader_);
@@ -1380,10 +1383,10 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 		memcpy(charge_ptr+1, ptr  , 2);
 		memcpy(charge_ptr  , ptr+1, 2);
 
-		printf("data: 0x%04x\n", data);
-		printf("ptr[0]: 0x%04x\n", ptr[0]);
-		printf("ptr[1]: 0x%04x\n", ptr[1]);
-		printf("current_bit: %d\n", *current_bit);
+		// printf("data: 0x%04x\n", data);
+		// printf("ptr[0]: 0x%04x\n", ptr[0]);
+		// printf("ptr[1]: 0x%04x\n", ptr[1]);
+		// printf("current_bit: %d\n", *current_bit);
 
 		// Get previous value
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
@@ -1393,12 +1396,12 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 		}
 
 		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
-		printf("current_bit: %d\n", *current_bit);
-		printf("wfvalue: %d\n", wfvalue);
+		// printf("current_bit: %d\n", *current_bit);
+		// printf("wfvalue: %d\n", wfvalue);
 
-		// if(verbosity_ >= 4){
-		//      _log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, wfvalue);
-		// }
+		if(verbosity_ >= 4){
+			 _log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, wfvalue);
+		}
 
 		//Save data in Digits
 		dgt->waveform()[time] = wfvalue;
