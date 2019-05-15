@@ -1,3 +1,7 @@
+#ifndef _EVENTREADER
+#define _EVENTREADER
+#endif
+
 #ifndef SPDLOG_VERSION
 #include "spdlog/spdlog.h"
 #endif

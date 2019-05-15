@@ -4,6 +4,14 @@
 
 namespace spd = spdlog;
 
+ReadConfig::ReadConfig(std::string& host, std::string& user,
+		std::string& passwd, std::string& dbname){
+	_host   = host;
+	_user   = user;
+	_passwd = passwd;
+	_dbname = dbname;
+}
+
 ReadConfig::ReadConfig(std::string& filename){
 	_filename = filename;
 	//_log = spd::stdout_logger_mt("config");

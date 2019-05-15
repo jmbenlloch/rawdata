@@ -1,5 +1,8 @@
 #include "catch.hpp"
 #include "RawDataInput.h"
+#ifndef _HUFFMAN
+#include "database/huffman.h"
+#endif
 
 TEST_CASE("Test flip words", "[flip_words]") {
 	const unsigned int size = 12;
@@ -639,4 +642,67 @@ TEST_CASE("Test create PMTs", "[create_pmts]") {
 			REQUIRE(pmts[ch].waveform()[samp] == 0);
 		}
 	}
+}
+
+TEST_CASE("Decode compressed pmts", "[decode_compressed]") {
+	int nsensors = 12;
+	int bufferSamples = 10;
+	unsigned short data[41] = {0x489a, 0x44d2, 0x2691, 0x3489, 0xa44d, 0x2269, 0x1348, 0x9a44, 0xd226, 0x9138, 0x8888, 0x8888, 0x888f, 0xffff, 0xf888, 0x8888, 0x8888, 0x8999, 0x9999, 0x9999, 0x9fff, 0xfff9, 0x9999, 0x9999, 0x9998, 0x8888, 0x8888, 0x8888, 0x8888, 0x8888, 0x8889, 0x9999, 0x9999, 0x999b, 0xdef7, 0xbdef, 0x7bde, 0xf788, 0x8888, 0x8888, 0x88ff};
+
+	next::RawDataInput rdata = next::RawDataInput();
+	//Huffman * huffman = rdata.getHuffmanTree();
+	Huffman huffman;
+	huffman.next[0] = NULL;
+	huffman.next[1] = NULL;
+
+	int run=10;
+	//TODO define config somehow...
+	std::string host = "neutrinos1.ific.uv.es";
+	std::string user = "nextreader";
+	std::string pass = "readonly";
+	std::string db   = "NEWDB";
+	ReadConfig config = ReadConfig(host, user, pass, db);
+	getHuffmanFromDB(&config, &huffman, run);
+
+	// printf_huffman(huffman, 1);
+	printf_huffman(&huffman, 1);
+
+	//Create DigitCollection, create Digits and positions vectors
+	next::DigitCollection digits;
+	int positions[nsensors];
+	std::vector<int> channelMaskVec;
+
+	//Create digits
+	for(unsigned s=0; s<nsensors; s++){
+		digits.emplace_back(s, next::digitType::RAWZERO, next::chanType::PMT);
+		positions[s] = s;
+		channelMaskVec.push_back(s);
+	}
+	createWaveforms(&digits, bufferSamples);
+
+	int16_t * ptr = (int16_t*) data;
+	int current_bit = 31;
+
+	for(int time=0; time<bufferSamples; time++){
+		printf("time: %d\n\n", time);
+		rdata.decodeChargeIndiaPmtCompressed(ptr, &current_bit, digits, &huffman, channelMaskVec, positions, time);
+	}
+
+	for(unsigned s=0; s<nsensors; s++){
+		REQUIRE(digits[s].nSamples() == bufferSamples);
+		REQUIRE(digits[s].waveform()[0] == 2323);
+		REQUIRE(digits[s].waveform()[1] == 2322);
+		REQUIRE(digits[s].waveform()[2] == 2322);
+		REQUIRE(digits[s].waveform()[3] == 2321);
+		REQUIRE(digits[s].waveform()[4] == 2322);
+		REQUIRE(digits[s].waveform()[5] == 2322);
+		REQUIRE(digits[s].waveform()[6] == 2323);
+		REQUIRE(digits[s].waveform()[7] == 2322);
+		REQUIRE(digits[s].waveform()[8] == 2321);
+		REQUIRE(digits[s].waveform()[9] == 2322);
+	}
+
+	// Clean up
+	digits.clear();
+	channelMaskVec.clear();
 }

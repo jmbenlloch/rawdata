@@ -20,7 +20,10 @@
 #include "writer/HDF5Writer.h"
 #endif
 
+#ifndef _EVENTREADER
 #include "detail/EventReader.h"
+#endif
+
 #include "detail/event.h"
 
 #include <stdint.h>
@@ -69,9 +72,13 @@ public:
   void decodeCharge(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int time);
   void decodeChargeHotelPmtZS(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
   void decodeChargeIndiaPmtZS(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
+  void decodeChargeIndiaPmtCompressed(int16_t* &buffer, int *current_bit, next::DigitCollection &digits, Huffman * huffman, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
   int computeSipmTime(int16_t * &ptr, next::EventReader * reader);
   int sipmChannelMask(int16_t * &ptr, std::vector<int> &channelMaskVec, int febId);
   int pmtsChannelMask(int16_t chmask, std::vector<int> &channelMaskVec, int fecId, int FWVersion);
+
+  //function for tests
+  Huffman* getHuffmanTree();
 
   void writeEvent();
 

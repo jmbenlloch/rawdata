@@ -11,6 +11,8 @@
 class ReadConfig {
 	public:
 		ReadConfig(std::string& filename);
+		ReadConfig(std::string& host, std::string& user,
+			   	std::string& passwd, std::string& dbname);
 		~ReadConfig();
 
 		std::string config();
