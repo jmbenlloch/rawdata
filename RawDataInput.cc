@@ -941,6 +941,10 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 		time++;
 
 		if(ZeroSuppression){
+			// Skip FTm
+			if (time == 0) {
+				buffer++;
+			}
 			if (time == BufferSamples){
 				break;
 			}
