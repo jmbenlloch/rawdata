@@ -70,8 +70,6 @@ int decode_compressed_value(int previous_value, int data, int * start_bit, Huffm
 	int type = CheckBit(data, current_bit);
 	current_bit -= 1;
 
-	// printf("type: %d\n", type);
-
 	int wfvalue;
 	if(type == 0){
 		wfvalue = (data >> (current_bit - 11)) & 0x0FFF;
@@ -83,6 +81,8 @@ int decode_compressed_value(int previous_value, int data, int * start_bit, Huffm
 		wfvalue = previous_value + wfvalue;
 	}
 	*start_bit = current_bit;
+
+	// printf("type: %d, value: 0x%04x\n", type, wfvalue);
 
 	return wfvalue;
 }

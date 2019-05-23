@@ -1364,6 +1364,8 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 		memcpy(charge_ptr+1, ptr  , 2);
 		memcpy(charge_ptr  , ptr+1, 2);
 
+//		printf("charge_ptr: 0x%04x\n", data);
+
 		// Get previous value
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
 		int previous = 0;
@@ -1371,6 +1373,8 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 			previous = dgt->waveform()[time-1];
 		}
 
+
+//		printf("word: 0x%04x\t, ElecID is %d\t Time is %d\t", data, channelMaskVec[chan], time);
 		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
 
 		if(verbosity_ >= 4){
