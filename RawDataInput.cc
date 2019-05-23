@@ -451,16 +451,12 @@ bool next::RawDataInput::ReadDATEEvent()
 
 void flipWords(unsigned int size, int16_t* in, int16_t* out){
 	unsigned int pos_in = 0, pos_out = 0;
-	//This will stop just before FAFAFAFA, usually there are FFFFFFFF before
-	while((pos_in < size)) {
-		// With compression mode there could be some FAFAFAFA along the data
-		// We have to check for FF...FFFF FAFAFAFA
-		if(*(uint32_t *)(&in[pos_in])   == 0xFFFFFFFF &&
-		   *(uint32_t *)(&in[pos_in+2]) == 0xFFFFFFFF &&
-		   *(uint32_t *)(&in[pos_in+4]) == 0xFFFFFFFF &&
-		   *(uint32_t *)(&in[pos_in+6]) == 0xFAFAFAFA){
-			break;
-		}
+	// This will stop just before FAFAFAFA, usually there are FFFFFFFF before
+	// With compression mode there could be some FAFAFAFA along the data
+	// The pattern FF...FFFF FAFAFAFA is a valid one 0,0,0.... 8,8,8,8...
+	// The only way to stop safely is to count the words.
+	// Each 16-bit word has 2 bytes, therefore pos_in*2 in the condition
+	while((pos_in*2 < size)) {
 		//Size taken empirically from data (probably due to
 		//UDP headers and/or DATE)
 		if (pos_in > 0 && pos_in % 3996 == 0){
@@ -469,9 +465,16 @@ void flipWords(unsigned int size, int16_t* in, int16_t* out){
 		out[pos_out]   = in[pos_in+1];
 		out[pos_out+1] = in[pos_in];
 
+//		if(size < 100){
+			// printf("out[%d]: 0x%04x\n", pos_out, out[pos_out]);
+			// printf("out[%d]: 0x%04x\n", pos_out+1, out[pos_out+1]);
+
+//		}
+
 		pos_in  += 2;
 		pos_out += 2;
 	}
+	// printf("pos_in: %d, size: %d\n", pos_in, size);
 }
 
 void next::RawDataInput::ReadIndiaTrigger(int16_t * buffer, unsigned int size){
