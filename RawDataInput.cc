@@ -47,8 +47,17 @@ next::RawDataInput::RawDataInput(ReadConfig * config, HDF5Writer * writer) :
 	_writer = writer;
 
 	payloadSipm = (char*) malloc(MEMSIZE*NUM_FEC_SIPM);
+	config_ = config;
+
+	// Initialize huffman to NULL
+	huffman_.next[0] = NULL;
+	huffman_.next[1] = NULL;
 }
 
+
+Huffman* next::RawDataInput::getHuffmanTree(){
+	return &huffman_;
+}
 
 void next::RawDataInput::countEvents(std::FILE* file, int * nevents, int * firstEvt){
 	*nevents = 0;
@@ -442,8 +451,12 @@ bool next::RawDataInput::ReadDATEEvent()
 
 void flipWords(unsigned int size, int16_t* in, int16_t* out){
 	unsigned int pos_in = 0, pos_out = 0;
-	//This will stop just before FAFAFAFA, usually there are FFFFFFFF before
-	while((pos_in < size) && *(uint32_t *)(&in[pos_in])!= 0xFAFAFAFA ) {
+	// This will stop just before FAFAFAFA, usually there are FFFFFFFF before
+	// With compression mode there could be some FAFAFAFA along the data
+	// The pattern FF...FFFF FAFAFAFA is a valid one 0,0,0.... 8,8,8,8...
+	// The only way to stop safely is to count the words.
+	// Each 16-bit word has 2 bytes, therefore pos_in*2 in the condition
+	while((pos_in*2 < size)) {
 		//Size taken empirically from data (probably due to
 		//UDP headers and/or DATE)
 		if (pos_in > 0 && pos_in % 3996 == 0){
@@ -452,9 +465,16 @@ void flipWords(unsigned int size, int16_t* in, int16_t* out){
 		out[pos_out]   = in[pos_in+1];
 		out[pos_out+1] = in[pos_in];
 
+//		if(size < 100){
+			// printf("out[%d]: 0x%04x\n", pos_out, out[pos_out]);
+			// printf("out[%d]: 0x%04x\n", pos_out+1, out[pos_out+1]);
+
+//		}
+
 		pos_in  += 2;
 		pos_out += 2;
 	}
+	// printf("pos_in: %d, size: %d\n", pos_in, size);
 }
 
 void next::RawDataInput::ReadIndiaTrigger(int16_t * buffer, unsigned int size){
@@ -858,8 +878,8 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 }
 
 void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
-	double timeinmus = 0.;
 	int time = -1;
+	int current_bit = 31;
 
 	fFecId = eventReader_->FecId();
 	eventTime_ = eventReader_->TimeStamp();
@@ -872,6 +892,18 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 	int FTBit = eventReader_->GetFTBit();
 	int ErrorBit = eventReader_->GetErrorBit();
 	int FWVersion = eventReader_->FWVersion();
+
+	if (ZeroSuppression){
+		if ((!huffman_.next[0]) && (!huffman_.next[1])){
+			auto myheader = (*headOut_).rbegin();
+			run_ = myheader->RunNb();
+			getHuffmanFromDB(config_, &huffman_, run_);
+			if( verbosity_ >= 1 ){
+				_log->debug("Huffman tree:\n");
+				print_huffman(_log, &huffman_, 1);
+			}
+		}
+	}
 
 	if (ErrorBit){
 		auto myheader = (*headOut_).rbegin();
@@ -888,17 +920,6 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 
 	///Reading the payload
 	fFirstFT = TriggerFT;
-	timeinmus = 0 - CLOCK_TICK_;
-	if(ZeroSuppression){
-		int singleBuff = TriggerFT + FTBit*fMaxSample;
-		int trigDiff = BufferSamples - fPreTrgSamples;
-		fFirstFT = (singleBuff + trigDiff) % BufferSamples;
-		// Same correction as the one applied in computeNextFThm
-		if(fPreTrgSamples > TriggerFT){
-			fFirstFT -= 1;
-		}
-	}
-
 	int nextFT = -1; //At start we don't know next FT value
 	int nextFThm = -1;
 
@@ -927,35 +948,22 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 	//2x size per link and there are manu FFFF at the end, which are the actual
 	//stop condition...
 	while (true){
-		int FT = *buffer & 0x0FFFF;
-		//printf("FT: 0x%04x\n", FT);
-
-		timeinmus = timeinmus + CLOCK_TICK_;
+		// timeinmus = timeinmus + CLOCK_TICK_;
 		time++;
-		buffer++;
 
-		//TODO ZS
 		if(ZeroSuppression){
-			//stop condition
-			if(FT == 0x0FFFF && *buffer == 0xFFFFFFFF && *(buffer+1) == 0xFFFFFFFF){
+			// Skip FTm
+			if (time == 0) {
+				buffer++;
+			}
+			if (time == BufferSamples){
 				break;
 			}
-
-			// Read new FThm bit and channel mask
-			int ftHighBit = (*buffer & 0x8000) >> 15;
-			ChannelMask = (*buffer & 0x0FFF);
-			pmtsChannelMask(ChannelMask, fec_chmask[fFecId], fFecId, FWVersion);
-
-			FT = FT + ftHighBit*fMaxSample - fFirstFT;
-
-			if ( FT < 0 ){
-				FT += BufferSamples;
-			}
-
-			timeinmus = FT * CLOCK_TICK_;
-			decodeChargeIndiaPmtZS(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, FT);
-
+			decodeChargeIndiaPmtCompressed(buffer, &current_bit, *pmtDgts_, &huffman_, fec_chmask[fFecId], pmtPosition, time);
 		}else{
+			int FT = *buffer & 0x0FFFF;
+			buffer++;
+
 			//If not ZS check next FT value, if not expected (0xffff) end of data
 			if(!ZeroSuppression){
 				computeNextFThm(&nextFT, &nextFThm, eventReader_);
@@ -966,7 +974,6 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 					break;
 				}
 			}
-			//decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, timeinmus);
 			decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, time);
 		}
 	}
@@ -1337,6 +1344,45 @@ void buildSipmData(unsigned int size, int16_t * ptr, int16_t * ptrA, int16_t * p
 		ptr++;
 		*ptr = temp2;
 		ptr++;
+	}
+}
+
+void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
+	   	int * current_bit, next::DigitCollection &digits, Huffman * huffman,
+	   	std::vector<int> &channelMaskVec, int* positions, int time){
+	int data = 0;
+
+	for(int chan=0; chan<channelMaskVec.size(); chan++){
+		// It is important to keep datatypes, memory allocation changes with them
+		int16_t * charge_ptr = (int16_t *) &data;
+
+		if(*current_bit < 16){
+			ptr++;
+			*current_bit += 16;
+		}
+
+		memcpy(charge_ptr+1, ptr  , 2);
+		memcpy(charge_ptr  , ptr+1, 2);
+
+//		printf("charge_ptr: 0x%04x\n", data);
+
+		// Get previous value
+		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
+		int previous = 0;
+		if (time){
+			previous = dgt->waveform()[time-1];
+		}
+
+
+//		printf("word: 0x%04x\t, ElecID is %d\t Time is %d\t", data, channelMaskVec[chan], time);
+		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
+
+		if(verbosity_ >= 4){
+			 _log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, wfvalue);
+		}
+
+		//Save data in Digits
+		dgt->waveform()[time] = wfvalue;
 	}
 }
 

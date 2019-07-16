@@ -3,6 +3,7 @@
 #include <string>
 
 #include "database/sensors.h"
+#include "database/huffman.h"
 
 #ifndef _READCONFIG
 #include "config/ReadConfig.h"
@@ -14,3 +15,4 @@
 
 void finish_with_error(MYSQL *con, std::shared_ptr<spdlog::logger> log);
 void getSensorsFromDB(ReadConfig * config, next::Sensors &sensors, int run_number, bool masked);
+void getHuffmanFromDB(ReadConfig * config, Huffman * huffman, int run_number);

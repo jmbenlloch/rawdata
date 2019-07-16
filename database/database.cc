@@ -10,6 +10,52 @@ void finish_with_error(MYSQL *con, std::shared_ptr<spdlog::logger> log)
   exit(1);
 }
 
+void getHuffmanFromDB(ReadConfig * config, Huffman * huffman, int run_number){
+	MYSQL *con = mysql_init(NULL);
+	std::shared_ptr<spdlog::logger> log = spd::stdout_color_mt("db");
+	std::shared_ptr<spdlog::logger> logerr = spd::stderr_color_mt("huffman");
+
+	if (con == NULL){
+		logerr->error("mysql_init() failed");
+		exit(1);
+	}
+
+	if (mysql_real_connect(con, config->host().c_str(), config->user().c_str(),
+				config->pass().c_str(), config->dbname().c_str(), 0, NULL, 0) == NULL){
+		finish_with_error(con, logerr);
+	}
+
+	std::string sql = "SELECT value, code from HuffmanCodes WHERE MinRun <= RUN and MaxRun >= RUN";
+
+	size_t start_pos = sql.find("RUN");
+	while(start_pos != std::string::npos){
+		sql.replace(start_pos, 3, std::to_string(run_number));
+		start_pos = sql.find("RUN");
+	}
+
+	if (mysql_query(con, sql.c_str())){
+		finish_with_error(con, logerr);
+	}
+
+	MYSQL_RES *result = mysql_store_result(con);
+	if (result == NULL){
+		finish_with_error(con, logerr);
+	}
+
+	log->info("Huffman codes read from {} in {}", config->dbname(),
+			config->host());
+
+	MYSQL_ROW row;
+
+	while ((row = mysql_fetch_row(result))){
+		parse_huffman_line(std::stoi(row[0]), row[1], huffman);
+	}
+
+	mysql_free_result(result);
+	mysql_close(con);
+
+}
+
 void getSensorsFromDB(ReadConfig * config, next::Sensors &sensors, int run_number, bool masked){
 	MYSQL *con = mysql_init(NULL);
 	std::shared_ptr<spdlog::logger> log = spd::stdout_color_mt("DB");

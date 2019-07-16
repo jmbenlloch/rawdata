@@ -4,6 +4,14 @@
 
 namespace spd = spdlog;
 
+ReadConfig::ReadConfig(std::string& host, std::string& user,
+		std::string& passwd, std::string& dbname){
+	_host   = host;
+	_user   = user;
+	_passwd = passwd;
+	_dbname = dbname;
+}
+
 ReadConfig::ReadConfig(std::string& filename){
 	_filename = filename;
 	//_log = spd::stdout_logger_mt("config");
@@ -37,6 +45,10 @@ void ReadConfig::parse(){
 	_user       = _obj.get("user", "nextreader").asString();
 	_passwd     = _obj.get("pass", "readonly").asString();
 	_dbname     = _obj.get("dbname", "NEWDB").asString();
+
+	_huffman    = _obj.get("huffman", "").asString();
+	_npmts      = _obj.get("npmts", 12).asInt();
+	_offset     = _obj.get("offset", 0).asInt();
 
 	_log->info("File in: {}", _filein);
 	_log->info("File out: {}", _fileout);
