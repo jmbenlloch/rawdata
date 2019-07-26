@@ -100,7 +100,6 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 
 	// Query the DB only one time even if there are two files
 	if (!_nodb && _firstEvent[0] && _firstEvent[1]){
-		std::cout << "connecting to db" << std::endl;
 		//Load sensors data from DB
 		getSensorsFromDB(_config, _sensors, run_number, true);
 	}
@@ -327,12 +326,25 @@ void next::HDF5Writer::sortPmts(std::vector<next::Digit*> &sorted_sensors,
 		DigitCollection &sensors){
 	std::fill(sorted_sensors.begin(), sorted_sensors.end(), (next::Digit*) 0);
 	int sensorid;
-	int count = 0;
+
+	// Create vector for sensor ids of channels received
+	std::vector<int> sensor_ids;
+	for(unsigned int i=0; i<sensors.size(); i++){
+		sensor_ids.emplace_back(_sensors.elecToSensor(sensors[i].chID()));
+	}
+	// Sort them and create a map to get the position for each one
+	std::sort(sensor_ids.begin(), sensor_ids.end());
+	std::map<int,int> sensorid_order;
+	for(unsigned int i=0; i<sensor_ids.size(); i++){
+		sensorid_order[sensor_ids[i]] = i;
+	}
+
+	// Write them sorted
 	for(unsigned int i=0; i<sensors.size(); i++){
 		sensorid = _sensors.elecToSensor(sensors[i].chID());
 		if(sensorid >= 0){
-			sorted_sensors[count] = &(sensors[i]);
-			count += 1;
+			int position = sensorid_order[sensorid];
+			sorted_sensors[position] = &(sensors[i]);
 		}
 	}
 }
