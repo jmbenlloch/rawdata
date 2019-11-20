@@ -39,6 +39,7 @@
 #define SIPMS_PER_FEB 64
 #define NUMBER_OF_FEBS 28
 #define MEMSIZE 8500000
+#define MAX_SIPM 4096
 
 namespace next {
 
@@ -115,7 +116,7 @@ private:
   bool sipmFec[20]; //Store which sipm fec channels has been read
   int16_t * payloadSipmPtr[20]; //Store pointers to the payload
   //To aid search of SiPM digits
-  int sipmPosition[1792]; //Num FEBs * 64
+  int sipmPosition[MAX_SIPM]; //Num FEBs * 64
   int pmtPosition[48];
 
   //Relation between real channels & BLR ones

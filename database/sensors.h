@@ -3,9 +3,6 @@
 #include <map>
 #include <vector>
 
-#define NSIPM 1792
-#define NPMT 12
-
 namespace next{
 	class Sensors
 	{

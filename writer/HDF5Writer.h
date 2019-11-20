@@ -22,7 +22,6 @@
 #endif
 
 #define MAX_PMTs 24
-#define MAX_SIPMs 1792
 
 namespace next{
 

@@ -259,7 +259,7 @@ bool next::RawDataInput::ReadDATEEvent()
 	eventError_ = false;
 
 	//Num FEB
-	std::fill(sipmPosition, sipmPosition+1792,-1);
+	std::fill(sipmPosition, sipmPosition+MAX_SIPM,-1);
 	std::fill(pmtPosition, pmtPosition+48,-1);
 
 	// Reset the output pointers.
@@ -1546,8 +1546,8 @@ void next::RawDataInput::decodeChargeIndiaPmtZS(int16_t* &ptr, next::DigitCollec
 void CreateSiPMs(next::DigitCollection * sipms, int * positions){
 	///Creating one class Digit per each SiPM
 	int elecID;
-	sipms->reserve(1792);
-	for (int ch=0; ch<1792; ch++){
+	sipms->reserve(MAX_SIPM);
+	for (int ch=0; ch<MAX_SIPM; ch++){
 		elecID = PositiontoSipmID(ch);
 		sipms->emplace_back(elecID, next::digitType::RAW, next::chanType::SIPM);
 		positions[ch] = sipms->size() - 1;
@@ -1601,7 +1601,7 @@ void next::RawDataInput::writeEvent(){
 	DigitCollection sipms;
 	pmts.reserve(32);
 	blrs.reserve(32);
-	sipms.reserve(1792);
+	sipms.reserve(MAX_SIPM);
 
 	auto erIt = pmtDgts_->begin();
 	while ( erIt != pmtDgts_->end() ){
