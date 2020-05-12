@@ -1098,8 +1098,8 @@ void next::RawDataInput::computeNextFThm(int * nextFT, int * nextFThm, next::Eve
 }
 
 void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
-    int16_t *payloadsipm_ptrA;
-    int16_t *payloadsipm_ptrB;
+    // int16_t *payloadsipm_ptrA;
+    // int16_t *payloadsipm_ptrB;
 	int ErrorBit = eventReader_->GetErrorBit();
 	int FecId = eventReader_->FecId();
 	int ZeroSuppression = eventReader_->ZeroSuppression();
@@ -1128,118 +1128,81 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 		}
 	}
 
-	//Copy pointers to each FEC payload
-	for(int i=0;i<NUM_FEC_SIPM;i++){
-		payloadSipmPtr[i] = (int16_t *) (payloadSipm+MEMSIZE*i);
-	}
+	int16_t *payload_ptr = (int16_t*) buffer;
 
-	//Copy data
-	for(unsigned int i=0; i<size; i++){
-		payloadSipmPtr[FecId][i] = buffer[i];
-	}
+	//read data
+	int time = -1;
+	//std::vector<int> channelMaskVec;
 
-	//Mark sipm as found
-	sipmFec[FecId] = true;
+	//Map febid -> channelmask
+	std::map<int, std::vector<int> > feb_chmask;
 
-	//Find partner
-	int channelA,channelB;
-	if(FecId % 2 == 0){
-		channelA = FecId;
-		channelB = FecId+1;
-	}else{
-		channelA = FecId-1;
-		channelB = FecId;
-	}
+	std::vector<int> activeSipmsInFeb;
+	activeSipmsInFeb.reserve(NUMBER_OF_FEBS);
 
-	//Check if we already have read 2i and 2i+1 channels
-	if(sipmFec[channelA] && sipmFec[channelB]){
-		_log->debug("A pair of SIPM FECs has been read, decoding...");
-		//Choose the correct pointers
-		payloadsipm_ptrA = payloadSipmPtr[channelA];
-		payloadsipm_ptrB = payloadSipmPtr[channelB];
-
-		//Rebuild payload from the two links
-		//TODO free && put correct size
-		//int16_t *payload_ptr = (int16_t*) malloc(size*2);
-		int16_t *payload_ptr = (int16_t*) malloc(MEMSIZE);
-		int16_t *mem_to_free = payload_ptr;
-		buildSipmData(size, payload_ptr, payloadsipm_ptrA, payloadsipm_ptrB);
-
-		//read data
-		int time = -1;
-		//std::vector<int> channelMaskVec;
-
-		//Map febid -> channelmask
-		std::map<int, std::vector<int> > feb_chmask;
-
-		std::vector<int> activeSipmsInFeb;
-		activeSipmsInFeb.reserve(NUMBER_OF_FEBS);
-
-		int previousFT = 0;
-		int nextFT = 0;
-		bool endOfData = false;
-		while (!endOfData){
-			time = time + 1;
-			for(unsigned int j=0; j<numberOfFEB; j++){
-				//Stop condition for while and for
-				if(*payload_ptr == 0xFFFFFFFF){
-					endOfData = true;
-					break;
-				}
-
-				int FEBId = ((*payload_ptr) & 0x0FC00) >> 10;
-				payload_ptr++;
-				if(verbosity_ >= 3){
-					_log->debug("Feb ID is 0x{:04x}", FEBId);
-				}
-
-				int FT = (*payload_ptr) & 0x0FFFF;
-				if (!ZeroSuppression){
-					if(time < 1){
-						previousFT = FT;
-					}else{
-						//New FT only after reading all FEBs in the FEC
-						if (j == 0){
-							nextFT = ((previousFT + 1) & 0x0FFFF) % (BufferSamples/40);
-						}else{
-							nextFT = previousFT;
-						}
-//						printf("pFT: 0x%04x, FT: 0x%04x, condition: %d\n", previousFT, FT, nextFT == FT);
-						if(nextFT != FT){
-							auto myheader = (*headOut_).rbegin();
-							_logerr->error("SiPM Error! Event {}, FECs ({:x}, {:x}), expected FT was {:x}, current FT is {:x}, time {}", myheader->NbInRun(), channelA, channelB, nextFT, FT, time);
-							fileError_ = true;
-							eventError_ = true;
-							//for(int i=-20; i<20; i++){
-							//	printf("data[%d]: 0x%04x\n", i, *(payload_ptr+i));
-							//}
-							if(discard_){
-								return;
-							}
-						}
-						previousFT = nextFT;
-					}
-				}
-
-				timeinmus = computeSipmTime(payload_ptr, eventReader_);
-
-				//If RAW mode, channel mask will appear the first time
-				//If ZS mode, channel mask will appear each time
-				if (time < 1 || ZeroSuppression){
-					feb_chmask.emplace(FEBId, std::vector<int>());
-					sipmChannelMask(payload_ptr, feb_chmask[FEBId], FEBId);
-					setActiveSensors(&(feb_chmask[FEBId]), &*sipmDgts_, sipmPosition);
-				}
-				if(ZeroSuppression){
-					decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, timeinmus);
-				}else{
-					decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
-				}
-				//TODO check this time (originally was time for RAW and timeinmus for ZS)
-				//decodeSipmCharge(payload_ptr, channelMaskVec, TotalNumberOfSiPMs, FEBId, timeinmus);
+	int previousFT = 0;
+	int nextFT = 0;
+	bool endOfData = false;
+	while (!endOfData){
+		time = time + 1;
+		for(unsigned int j=0; j<numberOfFEB; j++){
+			//Stop condition for while and for
+			if(*payload_ptr == 0xFFFFFFFF){
+				endOfData = true;
+				break;
 			}
+
+			int FEBId = ((*payload_ptr) & 0x0FC00) >> 10;
+			payload_ptr++;
+			if(verbosity_ >= 3){
+				_log->debug("Feb ID is 0x{:04x}", FEBId);
+			}
+
+			int FT = (*payload_ptr) & 0x0FFFF;
+			if (!ZeroSuppression){
+				if(time < 1){
+					previousFT = FT;
+				}else{
+					//New FT only after reading all FEBs in the FEC
+					if (j == 0){
+						nextFT = ((previousFT + 1) & 0x0FFFF) % (BufferSamples/40);
+					}else{
+						nextFT = previousFT;
+					}
+					//						printf("pFT: 0x%04x, FT: 0x%04x, condition: %d\n", previousFT, FT, nextFT == FT);
+					if(nextFT != FT){
+						auto myheader = (*headOut_).rbegin();
+						_logerr->error("SiPM Error! Event {}, FEC {:x}, expected FT was {:x}, current FT is {:x}, time {}", myheader->NbInRun(), FecId, nextFT, FT, time);
+						fileError_ = true;
+						eventError_ = true;
+						//for(int i=-20; i<20; i++){
+						//	printf("data[%d]: 0x%04x\n", i, *(payload_ptr+i));
+						//}
+						if(discard_){
+							return;
+						}
+					}
+					previousFT = nextFT;
+				}
+			}
+
+			timeinmus = computeSipmTime(payload_ptr, eventReader_);
+
+			//If RAW mode, channel mask will appear the first time
+			//If ZS mode, channel mask will appear each time
+			if (time < 1 || ZeroSuppression){
+				feb_chmask.emplace(FEBId, std::vector<int>());
+				sipmChannelMask(payload_ptr, feb_chmask[FEBId], FEBId);
+				setActiveSensors(&(feb_chmask[FEBId]), &*sipmDgts_, sipmPosition);
+			}
+			if(ZeroSuppression){
+				decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, timeinmus);
+			}else{
+				decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
+			}
+			//TODO check this time (originally was time for RAW and timeinmus for ZS)
+			//decodeSipmCharge(payload_ptr, channelMaskVec, TotalNumberOfSiPMs, FEBId, timeinmus);
 		}
-		free(mem_to_free);
 	}
 }
 
