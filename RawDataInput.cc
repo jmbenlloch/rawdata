@@ -1113,7 +1113,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 	//Check if digits & waveforms has been created
 	if(sipmDgts_->size() == 0){
 		CreateSiPMs(&(*sipmDgts_), sipmPosition);
-		createWaveforms(&*sipmDgts_, BufferSamples/40); //sipms samples 40 slower than pmts
+		createWaveforms(&*sipmDgts_, BufferSamples/20); //sipms samples 20 slower than pmts
 	}
 
     double timeinmus = 0.;
@@ -1165,7 +1165,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 				}else{
 					//New FT only after reading all FEBs in the FEC
 					if (j == 0){
-						nextFT = ((previousFT + 1) & 0x0FFFF) % (BufferSamples/40);
+						nextFT = ((previousFT + 1) & 0x0FFFF) % (BufferSamples/20);
 					}else{
 						nextFT = previousFT;
 					}
@@ -1277,7 +1277,7 @@ int next::RawDataInput::computeSipmTime(int16_t * &ptr, next::EventReader * read
 	ptr++;
 
 	if(ZeroSuppression){
-		int startPosition = ((FTBit<<16)+TriggerFT - PreTrgSamples + BufferSamples)/40 % int(BufferSamples*CLOCK_TICK_);
+		int startPosition = ((FTBit<<16)+TriggerFT - PreTrgSamples + BufferSamples)/20 % int(BufferSamples*CLOCK_TICK_);
 		FT = FT - startPosition;
 		if(FT < 0){
 			FT += BufferSamples*CLOCK_TICK_;
