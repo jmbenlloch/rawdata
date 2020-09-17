@@ -34,13 +34,13 @@ TEST_CASE("Test Sensors mapping", "[sipm_id2pos]") {
 		}
 	}
 
-    SECTION("Test total number of PMTs") {
-		REQUIRE(sensors.getNumberOfPmts() == NPMT);
-	}
-
-    SECTION("Test total number of SiPMT") {
-		REQUIRE(sensors.getNumberOfSipms() == NSIPM);
-	}
+    // SECTION("Test total number of PMTs") {
+	//     REQUIRE(sensors.getNumberOfPmts() == NPMT);
+	// }
+    //
+    // SECTION("Test total number of SiPMT") {
+	//     REQUIRE(sensors.getNumberOfSipms() == NSIPM);
+	// }
 
 	//Add pmt mapping
     SECTION("Test PMT mapping") {

@@ -5,7 +5,7 @@
 #endif
 
 TEST_CASE("Test flip words", "[flip_words]") {
-	const unsigned int size = 12;
+	const unsigned int size = 16;
 	unsigned short data[size] = {0x0123, 0x4567, 0x89ab, 0xcdef,
 		0xfedc,	0xba98, 0x7654, 0x3210, 0xffff, 0xffff, 0xfafa, 0xfafa};
 
@@ -17,7 +17,7 @@ TEST_CASE("Test flip words", "[flip_words]") {
 
 	flipWords(size, (int16_t*)data, test_data);
 
-	unsigned int size_check = size - 2; // FAFAFAFA won't be copied
+	unsigned int size_check = size / 2; // FAFAFAFA won't be copied
 
 	for(unsigned int i=0; i < size_check; i++){
 		REQUIRE(test_data[i] == flip_ptr[i]);
@@ -27,8 +27,8 @@ TEST_CASE("Test flip words", "[flip_words]") {
 TEST_CASE("Test seq counter removal", "[seqcounter_removal]") {
 	const unsigned int size = 40000;
 	int dataframe_size = 3996;
-	int16_t data[40000];
-	int16_t test_data[40000];
+	int16_t data[size];
+	int16_t test_data[size];
 	memset(data, 0, sizeof(int16_t) * size);
 	memset(test_data, 1, sizeof(int16_t) * size);
 
@@ -41,7 +41,7 @@ TEST_CASE("Test seq counter removal", "[seqcounter_removal]") {
 
 	//Sequence counters will be removed, so the actual data
 	//copied will be smaller than size
-	unsigned int size_check = size - size/dataframe_size * 2;
+	unsigned int size_check = size/2 - size/dataframe_size * 2;
 
 	for(unsigned int i=0; i<size_check; i++){
 		REQUIRE(test_data[i] == 0);
