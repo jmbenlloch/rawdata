@@ -1,10 +1,6 @@
 name: rawdata
 dependencies:
-    - conda-forge::jsoncpp=0.10.6
-    - conda-forge::mysql-connector-c=6.1.6
-    - gcc=4.8.5
-    - hdf5=1.8.17
-    - pytables=3.4.2=np113py36_0
-    - numpy=1.13.1=py36_0
-    - python=3.6.2=0
-    - pytest=3.2.1=py36_0
+    - pytables=3.6.1
+    - numpy=1.19.1
+    - python=3.8.5
+    - pytest=6.0.2

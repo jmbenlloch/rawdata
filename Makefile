@@ -1,6 +1,6 @@
 CC = g++
 CXXFLAGS = -g -ljsoncpp -O3 -std=c++11 -Wall -Wextra -pedantic -pthread -lhdf5 -lmysqlclient
-INCFLAGS = -I.  -D_GLIBCXX_USE_CXX11_ABI=0 -I$(CONDA_PREFIX)/include
+INCFLAGS = -I. -I$(HDF5INC) -I$(MYSQLINC)
 
 CXXFLAGS += '-DHDF5'
 
@@ -10,7 +10,7 @@ tests:
 	$(CC) -o tests ReadConfig.o RawDataInput.o DATEEventHeader.o Digit.o EventReader.o HDF5Writer.o hdf5_functions.o database.o CopyEvents.o sensors.o huffman.o testing/*cc $(CXXFLAGS) $(INCFLAGS)
 
 link:
-	$(CC) -g -o decode decode.o ReadConfig.o RawDataInput.o DATEEventHeader.o Digit.o EventReader.o HDF5Writer.o hdf5_functions.o database.o CopyEvents.o sensors.o huffman.o $(CXXFLAGS) $(INCFLAGS)
+	$(CC) -g -o decode decode.o ReadConfig.o RawDataInput.o DATEEventHeader.o Digit.o EventReader.o HDF5Writer.o hdf5_functions.o database.o CopyEvents.o sensors.o huffman.o $(CXXFLAGS) $(INCFLAGS) -I$(JSONINC)
 
 decode:
 	$(CC) -c decode.cc $(CXXFLAGS) $(INCFLAGS)

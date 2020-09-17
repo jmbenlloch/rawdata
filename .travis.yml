@@ -1,18 +1,11 @@
 language: generic
-sudo:     false
 
-matrix:
-  fast_finish: true
+services:
+  - docker
 
-os:
-  - linux
-
-branches:
-  except:
-    - /^docs\..*$/
-
-install:
-  - source manage.sh install
+before_install:
+  - docker build -t rawdata .
 
 script:
-  - bash manage.sh run_tests
+  - docker run rawdata /rawdata/run_tests.sh
+
