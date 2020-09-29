@@ -31,6 +31,18 @@ typedef struct{
 	int value;
 } triggerConf_t;
 
+typedef struct{
+	unsigned int evt_number;
+	unsigned char tofpet_id;
+	unsigned char wordtype_id;
+	unsigned char channel_id;
+	unsigned char tac_id;
+	unsigned short int tcoarse;
+	unsigned short int ecoarse;
+	unsigned short int tfine;
+	unsigned short int efine;
+} petalo_t;
+
 
 hid_t createGroup(hid_t file, std::string& group);
 
@@ -52,3 +64,8 @@ void writeRun(runinfo_t * runData, hid_t dataset, hid_t memtype, hsize_t evt_num
 void writeSensor(sensor_t * sensorData, hid_t dataset, hid_t memtype, hsize_t sensor_number);
 void writeTriggerType(trigger_t * trigger, hid_t dataset, hid_t memtype, hsize_t evt_number);
 void writeTriggerConf(triggerConf_t * triggerData, hid_t dataset, hid_t memtype, hsize_t index);
+
+
+// Petalo functions
+hid_t createPetaloType();
+void writePetaloType(petalo_t * data, hid_t dataset, hid_t memtype, hsize_t evt_number);

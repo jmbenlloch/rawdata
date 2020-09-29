@@ -275,3 +275,39 @@ void writeSensor(sensor_t * sensorData, hid_t dataset, hid_t memtype, hsize_t se
 	H5Sclose(file_space);
 	H5Sclose(memspace);
 }
+
+
+// Petalo functions
+
+hid_t createPetaloType(){
+	//Create compound datatype for the table
+	hsize_t memtype = H5Tcreate (H5T_COMPOUND, sizeof (petalo_t));
+	H5Tinsert (memtype, "evt_number"  , HOFFSET (petalo_t, evt_number ), H5T_NATIVE_UINT);
+	H5Tinsert (memtype, "tofpet_id"   , HOFFSET (petalo_t, tofpet_id  ), H5T_NATIVE_UINT8);
+	H5Tinsert (memtype, "wordtype_id" , HOFFSET (petalo_t, wordtype_id), H5T_NATIVE_UINT8);
+	H5Tinsert (memtype, "channel_id"  , HOFFSET (petalo_t, channel_id ), H5T_NATIVE_UINT8);
+	H5Tinsert (memtype, "tac_id"      , HOFFSET (petalo_t, tac_id     ), H5T_NATIVE_UINT8);
+	H5Tinsert (memtype, "tcoarse"     , HOFFSET (petalo_t, tcoarse    ), H5T_NATIVE_UINT16);
+	H5Tinsert (memtype, "ecoarse"     , HOFFSET (petalo_t, ecoarse    ), H5T_NATIVE_UINT16);
+	H5Tinsert (memtype, "tfine"       , HOFFSET (petalo_t, tfine      ), H5T_NATIVE_UINT16);
+	H5Tinsert (memtype, "efine"       , HOFFSET (petalo_t, efine      ), H5T_NATIVE_UINT16);
+	return memtype;
+}
+
+void writePetaloType(petalo_t * data, hid_t dataset, hid_t memtype, hsize_t evt_number){
+	hid_t memspace, file_space;
+	hsize_t dims[1] = {1};
+	memspace = H5Screate_simple(1, dims, NULL);
+
+	//Extend PMT dataset
+	dims[0] = evt_number+1;
+	H5Dset_extent(dataset, dims);
+
+	file_space = H5Dget_space(dataset);
+	hsize_t start[1] = {evt_number};
+	hsize_t count[1] = {1};
+	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
+	H5Dwrite(dataset, memtype, memspace, file_space, H5P_DEFAULT, data);
+	H5Sclose(file_space);
+	H5Sclose(memspace);
+}

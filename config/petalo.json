@@ -1,0 +1,8 @@
+{
+    "file_in":"run_8161.gdc1next.next-new.000.rd",
+    "file_out": "petalo.h5",
+	"max_events":1000,
+	"skip": 0,
+	"discard": false,
+	"verbosity" : 1
+}

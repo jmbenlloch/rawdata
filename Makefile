@@ -15,6 +15,10 @@ link:
 decode:
 	$(CC) -c decode.cc $(CXXFLAGS) $(INCFLAGS)
 
+petalo:
+	$(CC) -c petalo.cc $(CXXFLAGS) $(INCFLAGS)
+	$(CC) -g -o petalo petalo.o ReadConfig.o RawDataPetalo.o DATEEventHeader.o Digit.o PetaloEventReader.o PetaloWriter.o hdf5_functions.o  $(CXXFLAGS) $(INCFLAGS) -I$(JSONINC)
+
 huffman:
 	$(CC) -c decode_huffman.cc $(CXXFLAGS) $(INCFLAGS)
 	$(CC) -g -o decode_huffman decode_huffman.o ReadConfig.o RawDataInput.o DATEEventHeader.o Digit.o EventReader.o HDF5Writer.o hdf5_functions.o database.o CopyEvents.o sensors.o huffman.o $(CXXFLAGS) $(INCFLAGS)
@@ -25,6 +29,10 @@ config:
 eventreader:
 	$(CC) -c detail/EventReader.cc $(CXXFLAGS) $(INCFLAGS)
 	$(CC) -c RawDataInput.cc $(CXXFLAGS) $(INCFLAGS)
+
+petaloreader:
+	$(CC) -c detail/PetaloEventReader.cc $(CXXFLAGS) $(INCFLAGS)
+	$(CC) -c RawDataPetalo.cc $(CXXFLAGS) $(INCFLAGS)
 	
 navel:
 	$(CC) -c navel/*cc $(CXXFLAGS) $(INCFLAGS)
@@ -38,4 +46,4 @@ database:
 clean:
 	@rm *.o decode
 
-.PHONY: decode config clean navel eventreader writer database tests
+.PHONY: decode config clean navel eventreader writer database tests petaloreader petalo
