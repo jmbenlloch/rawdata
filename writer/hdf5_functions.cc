@@ -299,6 +299,18 @@ void writePetaloType(petalo_t * data, hid_t dataset, hid_t memtype, hsize_t evt_
 	hsize_t dims[1] = {1};
 	memspace = H5Screate_simple(1, dims, NULL);
 
+
+	printf("data.evt_number: %d\n", data->evt_number);
+	printf("data.tofpet_id: %d\n", data->tofpet_id);
+	printf("data.wordtype_id: %d\n", data->wordtype_id);
+	printf("data.channel_id: %d\n", data->channel_id);
+	printf("data.tac_id: %d\n", data->tac_id);
+	printf("data.tcoarse: %d\n", data->tcoarse);
+	printf("data.ecoarse: %d\n", data->ecoarse);
+	printf("data.tfine: %d\n", data->tfine);
+	printf("data.efine: %d\n", data->efine);
+
+
 	//Extend PMT dataset
 	dims[0] = evt_number+1;
 	H5Dset_extent(dataset, dims);

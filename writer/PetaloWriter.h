@@ -40,16 +40,10 @@ namespace next{
 
 	//Datasets
 	size_t _dataTable;
-	size_t _triggerd[2];
-	size_t _extpmtrd[2];
-	size_t _eventsTable[2];
-	size_t _triggerTable[2];
-	size_t _pmtblr[2];
-	size_t _sipmrd[2];
-	size_t _memtypeEvt;
 
     //! counter for writen events
     size_t _ievt;
+    size_t _row;
 
 	ReadConfig * _config;
 

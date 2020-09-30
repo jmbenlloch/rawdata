@@ -60,6 +60,9 @@ public:
 
   bool errors();
 
+  void decodeTOFPET(int16_t * buffer, std::vector<petalo_t>& data);
+  void ReadTOFPET(int16_t * buffer, unsigned int size);
+
 private:
   /// Retrieve DATE event header size stored in the raw data.
   /// 80 bytes for the newer DAQ (DATE event header format 3.14)
@@ -95,6 +98,8 @@ private:
 
   bool fileError_, eventError_;
   ReadConfig * config_;
+
+  std::unique_ptr<std::vector<petalo_t> > dataVector_;
 
 };
 

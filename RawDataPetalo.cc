@@ -69,7 +69,6 @@ int next::RawDataPetalo::loadNextEvent(std::FILE* file, unsigned char ** buffer)
 	unsigned int headerSize = sizeof(eventHeaderStruct);
 	unsigned int readSize = this->readHeaderSize(file);
 	if ((readSize != headerSize) && readSize) { //if we read 0 is the end of the file
-		//TODO throw art::Exception(art::errors::FileReadError;)
 		//_logerr->error("Event header size of {} bytes read from data does not match expected size of {}", readSize, headerSize);
 		return -1;
 	}
@@ -85,7 +84,6 @@ int next::RawDataPetalo::loadNextEvent(std::FILE* file, unsigned char ** buffer)
 			bytes_read = fread(*buffer, 1, header.eventSize, file);
 			//bytes_read += fread(*buffer, 1, header.eventSize-(long)headerSize, file);
 			if (bytes_read != header.eventSize ){
-				//TODO throw art::Exception(art::errors::FileReadError)
 				_logerr->error("Unable to read event from file");
 			}
 			evt_number = EVENT_ID_GET_NB_IN_RUN(header.eventId);
@@ -157,10 +155,13 @@ bool next::RawDataPetalo::readNext()
 		eventNo_++;
 		if(!toSkip){
 			bool result =  ReadDATEEvent();
+			std::cout << "result: " << result << std::endl;
 			if (result){
-				if(!eventError_ && discard_){
+				// TODO: deal with event error
+	//			if(!eventError_ && discard_){
+					std::cout << "call writeEvent" << std::endl;
 					writeEvent();
-				}
+	//			}
 			}
 			free(buffer_);
 			return result;
@@ -186,6 +187,7 @@ bool next::RawDataPetalo::ReadDATEEvent()
 
 	// Reset the output pointers.
 	// TODO petalo data: pmtDgts_.reset(new DigitCollection);
+	dataVector_.reset(new std::vector<petalo_t>);
 
 	if (!event_) return false;
 
@@ -312,6 +314,7 @@ bool next::RawDataPetalo::ReadDATEEvent()
 				_log->debug("card: {}", eventReader_->CardID());
 			}
 			// ReadHotelSipm(payload_flip, size);
+			ReadTOFPET(payload_flip, size);
 		// }
 
 		count = end - position;
@@ -363,11 +366,12 @@ unsigned int next::RawDataPetalo::readHeaderSize(std::FILE* fptr) const
 
 
 void next::RawDataPetalo::writeEvent(){
+	std::cout << "rawdata: writeEvent" << std::endl;
 	auto date_header = (*headOut_).rbegin();
 	unsigned int event_number = date_header->NbInRun();
 	run_ = date_header->RunNb();
 
-	//_writer->Write(pmts, blrs, extPmt, *sipmDgts_, trigOut_, triggerChans_, triggerType_, eventTime_, event_number, run_);
+	_writer->Write(*dataVector_);
 }
 
 
@@ -386,11 +390,35 @@ void next::RawDataPetalo::ReadTOFPET(int16_t * buffer, unsigned int size){
 	}
 
 	// TODO: Stop condition?
-	while (true){
-		decodeCharge(buffer, *pmtDgts_, fec_chmask[fFecId], pmtPosition, time);
+	for (int i=0; i < 10; i++){
+	//while (true){
+	//	if ((*buffer == 0xFFFF) && (*(buffer+1) == 0xFFFF)){
+	//		break;
+	//	}
+		printf("decode tofpet %d\n", i);
+		decodeTOFPET(buffer, *dataVector_);
 	}
 }
 
-void next::RawDataPetalo::decodeTOFPET(int16_t * buffer){
+void next::RawDataPetalo::decodeTOFPET(int16_t * buffer, std::vector<petalo_t>& dataVector){
+	petalo_t data;
+	data.evt_number  = 0xFFFFFFFF;
 
+	data.tofpet_id   = (*buffer & 0x0E000) >> 13;
+	data.wordtype_id = (*buffer & 0x000C0) >>  6;
+	data.channel_id  = (*buffer & 0x0003F);
+	buffer++;
+
+	data.tac_id      = (*buffer & 0x0C000) >> 14;
+	data.tcoarse     = ((*buffer & 0x03FFF) << 2) || ((*(buffer+1) & 0x0C000) >> 14);
+	buffer++;
+
+	data.ecoarse     = (*buffer & 0x03FF0) >> 4;
+	data.tfine       = ((*buffer & 0x0000F) << 6) || ((*(buffer+1) & 0x0000F) >> 10);
+	buffer++;
+
+	data.efine       = (*buffer & 0x003FF);
+	buffer++;
+
+	dataVector_->push_back(data);
 }
