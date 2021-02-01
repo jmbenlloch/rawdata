@@ -1679,7 +1679,7 @@ void next::RawDataInput::writeEvent(){
 	unsigned int event_number = date_header->NbInRun();
 	run_ = date_header->RunNb();
 
-	_writer->Write(pmts, blrs, extPmt, *sipmDgts_, trigOut_, triggerChans_, triggerType_, eventTime_, event_number, run_);
+	// _writer->Write(pmts, blrs, extPmt, *sipmDgts_, trigOut_, triggerChans_, triggerType_, eventTime_, event_number, run_);
 }
 
 void freeWaveformMemory(next::DigitCollection * sensors){

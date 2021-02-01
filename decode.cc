@@ -28,7 +28,7 @@ int main(int argc, char* argv[]){
 
 	if(!config.copyEvts()){
 		next::HDF5Writer writer = next::HDF5Writer(&config);
-		writer.Open(config.file_out(), config.file_out2());
+//		writer.Open(config.file_out(), config.file_out2());
 
 		next::RawDataInput rdata = next::RawDataInput(&config, &writer);
 		rdata.readFile(config.file_in());
@@ -39,8 +39,8 @@ int main(int argc, char* argv[]){
 		}
 
 		//CLose open files with rawdatainput
-		writer.WriteRunInfo();
-		writer.Close();
+//		writer.WriteRunInfo();
+//		writer.Close();
 
 		if(!rdata.errors()){
 			console->info("RawDataInput finished");
