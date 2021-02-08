@@ -61,7 +61,7 @@ public:
   bool ReadDATEEvent();
   void ReadHotelSipm(int16_t * buffer, unsigned int size);
   void ReadHotelPmt(int16_t * buffer, unsigned int size);
-  void ReadIndiaPmt(int16_t * buffer, unsigned int size);
+  void ReadIndiaJuliettPmt(int16_t * buffer, unsigned int size);
   void ReadHotelTrigger(int16_t * buffer, unsigned int size);
   void ReadIndiaTrigger(int16_t * buffer, unsigned int size);
 

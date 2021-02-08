@@ -426,7 +426,28 @@ bool next::RawDataInput::ReadDATEEvent()
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a PMT FEC");
 				}
-				ReadIndiaPmt(payload_flip,size);
+				ReadIndiaJuliettPmt(payload_flip,size);
+				fwVersionPmt = fwVersion;
+			}else if (FECtype==2){
+				if( verbosity_ >= 1 ){
+					_log->debug("This is a Trigger FEC");
+				}
+				ReadIndiaTrigger(payload_flip,size);
+			}else  if (FECtype==1){
+				if( verbosity_ >= 1 ){
+					_log->debug("This is a SIPM FEC");
+				}
+				ReadHotelSipm(payload_flip, size);
+			}
+		}
+
+		//FWVersion JULIETT
+		if (fwVersion == 10){
+			if (FECtype==0){
+				if( verbosity_ >= 1 ){
+					_log->debug("This is a PMT FEC");
+				}
+				ReadIndiaJuliettPmt(payload_flip,size);
 				fwVersionPmt = fwVersion;
 			}else if (FECtype==2){
 				if( verbosity_ >= 1 ){
@@ -877,7 +898,7 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 //	}
 }
 
-void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
+void next::RawDataInput::ReadIndiaJuliettPmt(int16_t * buffer, unsigned int size){
 	int time = -1;
 	int current_bit = 31;
 
@@ -888,6 +909,12 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 	int Baseline = eventReader_->Baseline();
 	fPreTrgSamples = eventReader_->PreTriggerSamples();
 	int BufferSamples = eventReader_->BufferSamples();
+	if (eventReader_->FWVersion() == 10){
+		if (eventReader_->TriggerType() >= 8){
+			fPreTrgSamples = eventReader_->PreTriggerSamples2();
+			BufferSamples  = eventReader_->BufferSamples2();
+		}
+	}
 	int TriggerFT = eventReader_->TriggerFT();
 	int FTBit = eventReader_->GetFTBit();
 	int ErrorBit = eventReader_->GetErrorBit();
@@ -1069,6 +1096,12 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 void next::RawDataInput::computeNextFThm(int * nextFT, int * nextFThm, next::EventReader * reader){
 	int PreTrgSamples = reader->PreTriggerSamples();
 	int BufferSamples = reader->BufferSamples();
+	if (reader->FWVersion() == 10){
+		if (reader->TriggerType() >= 8){
+			fPreTrgSamples = reader->PreTriggerSamples2();
+			BufferSamples  = reader->BufferSamples2();
+		}
+	}
 	int FTBit         = reader->GetFTBit();
 	int TriggerFT     = reader->TriggerFT();
 
@@ -1105,6 +1138,11 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 	int ZeroSuppression = eventReader_->ZeroSuppression();
 	unsigned int numberOfFEB = eventReader_->NumberOfChannels();
 	int BufferSamples = eventReader_->BufferSamples();
+	if (eventReader_->FWVersion() == 10){
+		if (eventReader_->TriggerType() >= 8){
+			BufferSamples  = eventReader_->BufferSamples2();
+		}
+	}
 
 	int ChannelMask = eventReader_->ChannelMask();
 //	std::cout << "fec: " << FecId << "\tsipm channel mask: " << ChannelMask << std::endl;
@@ -1308,6 +1346,12 @@ int next::RawDataInput::computeSipmTime(int16_t * &ptr, next::EventReader * read
 	int TriggerFT = reader->TriggerFT();
 	int PreTrgSamples = reader->PreTriggerSamples();
 	int BufferSamples = reader->BufferSamples();
+	if (reader->FWVersion() == 10){
+		if (reader->TriggerType() >= 8){
+			fPreTrgSamples = reader->PreTriggerSamples2();
+			BufferSamples  = reader->BufferSamples2();
+		}
+	}
 	int ZeroSuppression = reader->ZeroSuppression();
 
 	int FT = (*ptr) & 0x0FFFF;
