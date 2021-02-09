@@ -133,6 +133,8 @@ void next::EventReader::readEventConfJuliett(int16_t* &ptr){
 	if (verbose_ >= 2){
 		_log->debug("Buffer samples: 0x{:04x}", fBufferSamples);
 		_log->debug("Pretrigger samples: 0x{:04x}", fPreTriggerSamples);
+		_log->debug("Buffer samples 2: 0x{:04x}", fBufferSamples);
+		_log->debug("Pretrigger samples 2: 0x{:04x}", fPreTriggerSamples);
 		_log->debug("Channel mask: 0x{:04x}", fChannelMask);
 	}
 }
