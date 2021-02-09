@@ -327,7 +327,7 @@ void next::EventReader::ReadCommonHeader(int16_t* &ptr){
 			}
 			readFecID(ptr);
 		}
-		if(fFWVersion == 9){
+		if(fFWVersion >= 9){
 			if(fBaseline){
 				readIndiaBaselines(ptr);
 			}

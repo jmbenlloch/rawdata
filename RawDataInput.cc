@@ -1689,7 +1689,7 @@ void next::RawDataInput::writeEvent(){
 			}
 		}
 
-		if(fwVersionPmt == 9){
+		if(fwVersionPmt >= 9){
 			int chid = (*erIt).chID();
 			if ((*erIt).active()){
 				// 0-11 ->   0- 11 Real
