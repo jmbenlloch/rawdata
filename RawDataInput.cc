@@ -1096,9 +1096,9 @@ void next::RawDataInput::computeNextFThm(int * nextFT, int * nextFThm, next::Eve
 	int PreTrgSamples = reader->PreTriggerSamples();
 	int BufferSamples = reader->BufferSamples();
 	if (reader->FWVersion() == 10){
+		BufferSamples  = reader->BufferSamples2();
 		if (reader->TriggerType() >= 8){
 			fPreTrgSamples = reader->PreTriggerSamples2();
-			BufferSamples  = reader->BufferSamples2();
 		}
 	}
 	int FTBit         = reader->GetFTBit();
