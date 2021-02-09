@@ -960,7 +960,6 @@ void next::RawDataInput::ReadIndiaJuliettPmt(int16_t * buffer, unsigned int size
 	CreatePMTs(&*pmtDgts_, pmtPosition, &(fec_chmask[fFecId]), BufferSamples, ZeroSuppression);
 	setActiveSensors(&(fec_chmask[fFecId]), &*pmtDgts_, pmtPosition);
 
-
 	for(unsigned int i=0; i<pmtDgts_->size(); i++){
 		int elecID = (*pmtDgts_)[i].chID();
 		int pos = pmtPosition[elecID];
@@ -1018,7 +1017,7 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 	int FWVersion = eventReader_->FWVersion();
 
 	int maxChannels = 8;
-	if (FWVersion == 9){
+	if (FWVersion >= 9){
 		maxChannels = 12;
 	}
 
@@ -1040,7 +1039,7 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 			if (dualCh){
 				dualChannels[ElecID] = dualCh;
 				int pairCh = channelsRelation[ElecID];
-				if (FWVersion == 9){
+				if (FWVersion >= 9){
 					pairCh = channelsRelationIndia[ElecID];
 				}
 				dualChannels[pairCh] = dualCh;
@@ -1073,7 +1072,7 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 		}
 	}
 
-	if(fwversion == 9){
+	if(fwversion >= 9){
 		/***************************************
 		 * 2 -> 0,2,4,6,8,12,14,16,18,20,22    *
 		 * 3 -> 1,3,5,7,9,11,13,15,17,19,21,23 *
