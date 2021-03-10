@@ -34,11 +34,14 @@
 #include <ios>
 #include <unistd.h>
 
-#define NUM_FEC_SIPM 20
+#define NUM_FEC_SIPM 56
 #define PMTS_PER_FEC 8
 #define SIPMS_PER_FEB 64
 #define NUMBER_OF_FEBS 28
 #define MEMSIZE 8500000
+
+#define NSIPMS 3584
+#define NPMTS 60
 
 namespace next {
 
@@ -112,11 +115,11 @@ private:
   //Sipm separate streams variables
   //char payloadSipm[5000000*NUM_FEC_SIPM];
   char * payloadSipm;
-  bool sipmFec[20]; //Store which sipm fec channels has been read
-  int16_t * payloadSipmPtr[20]; //Store pointers to the payload
+  bool sipmFec[NUM_FEC_SIPM]; //Store which sipm fec channels has been read
+  int16_t * payloadSipmPtr[NUM_FEC_SIPM]; //Store pointers to the payload
   //To aid search of SiPM digits
-  int sipmPosition[1792]; //Num FEBs * 64
-  int pmtPosition[48];
+  int sipmPosition[NSIPMS]; //Num FEBs * 64
+  int pmtPosition[NPMTS];
 
   //Relation between real channels & BLR ones
   const std::vector<int> channelsRelation {2,3,0,1, 6,7,4,5, 10,11,8,9, 14,15,12,13, 18,19,16,17, 22,23,20,21, 26,27,24,25, 30,31,28,29};

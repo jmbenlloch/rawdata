@@ -259,8 +259,8 @@ bool next::RawDataInput::ReadDATEEvent()
 	eventError_ = false;
 
 	//Num FEB
-	std::fill(sipmPosition, sipmPosition+1792,-1);
-	std::fill(pmtPosition, pmtPosition+48,-1);
+	std::fill(sipmPosition, sipmPosition+NSIPMS,-1);
+	std::fill(pmtPosition, pmtPosition+NPMTS,-1);
 
 	// Reset the output pointers.
 	pmtDgts_.reset(new DigitCollection);
@@ -1235,9 +1235,14 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 					if(time < 1){
 						previousFT = FT;
 					}else{
+						int BufferSamplesFT  = eventReader_->BufferSamples();
+						if (eventReader_->FWVersion() == 10){
+							BufferSamplesFT  = eventReader_->BufferSamples2();
+						}
+
 						//New FT only after reading all FEBs in the FEC
 						if (j == 0){
-							nextFT = ((previousFT + 1) & 0x0FFFF) % (BufferSamples/40);
+							nextFT = ((previousFT + 1) & 0x0FFFF) % (BufferSamplesFT/40);
 						}else{
 							nextFT = previousFT;
 						}
@@ -1346,9 +1351,9 @@ int next::RawDataInput::computeSipmTime(int16_t * &ptr, next::EventReader * read
 	int PreTrgSamples = reader->PreTriggerSamples();
 	int BufferSamples = reader->BufferSamples();
 	if (reader->FWVersion() == 10){
+		BufferSamples  = reader->BufferSamples2();
 		if (reader->TriggerType() >= 8){
-			fPreTrgSamples = reader->PreTriggerSamples2();
-			BufferSamples  = reader->BufferSamples2();
+			PreTrgSamples = reader->PreTriggerSamples2();
 		}
 	}
 	int ZeroSuppression = reader->ZeroSuppression();
@@ -1589,8 +1594,8 @@ void next::RawDataInput::decodeChargeIndiaPmtZS(int16_t* &ptr, next::DigitCollec
 void CreateSiPMs(next::DigitCollection * sipms, int * positions){
 	///Creating one class Digit per each SiPM
 	int elecID;
-	sipms->reserve(1792);
-	for (int ch=0; ch<1792; ch++){
+	sipms->reserve(NSIPMS);
+	for (int ch=0; ch<NSIPMS; ch++){
 		elecID = PositiontoSipmID(ch);
 		sipms->emplace_back(elecID, next::digitType::RAW, next::chanType::SIPM);
 		positions[ch] = sipms->size() - 1;
@@ -1644,7 +1649,7 @@ void next::RawDataInput::writeEvent(){
 	DigitCollection sipms;
 	pmts.reserve(32);
 	blrs.reserve(32);
-	sipms.reserve(1792);
+	sipms.reserve(NSIPMS);
 
 	auto erIt = pmtDgts_->begin();
 	while ( erIt != pmtDgts_->end() ){
