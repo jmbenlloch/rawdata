@@ -259,8 +259,8 @@ bool next::RawDataInput::ReadDATEEvent()
 	eventError_ = false;
 
 	//Num FEB
-	std::fill(sipmPosition, sipmPosition+1792,-1);
-	std::fill(pmtPosition, pmtPosition+48,-1);
+	std::fill(sipmPosition, sipmPosition+NSIPMS,-1);
+	std::fill(pmtPosition, pmtPosition+NPMTS,-1);
 
 	// Reset the output pointers.
 	pmtDgts_.reset(new DigitCollection);
@@ -426,7 +426,28 @@ bool next::RawDataInput::ReadDATEEvent()
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a PMT FEC");
 				}
-				ReadIndiaPmt(payload_flip,size);
+				ReadIndiaJuliettPmt(payload_flip,size);
+				fwVersionPmt = fwVersion;
+			}else if (FECtype==2){
+				if( verbosity_ >= 1 ){
+					_log->debug("This is a Trigger FEC");
+				}
+				ReadIndiaTrigger(payload_flip,size);
+			}else  if (FECtype==1){
+				if( verbosity_ >= 1 ){
+					_log->debug("This is a SIPM FEC");
+				}
+				ReadHotelSipm(payload_flip, size);
+			}
+		}
+
+		//FWVersion JULIETT
+		if (fwVersion == 10){
+			if (FECtype==0){
+				if( verbosity_ >= 1 ){
+					_log->debug("This is a PMT FEC");
+				}
+				ReadIndiaJuliettPmt(payload_flip,size);
 				fwVersionPmt = fwVersion;
 			}else if (FECtype==2){
 				if( verbosity_ >= 1 ){
@@ -877,7 +898,7 @@ void next::RawDataInput::ReadHotelPmt(int16_t * buffer, unsigned int size){
 //	}
 }
 
-void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
+void next::RawDataInput::ReadIndiaJuliettPmt(int16_t * buffer, unsigned int size){
 	int time = -1;
 	int current_bit = 31;
 
@@ -888,6 +909,12 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 	int Baseline = eventReader_->Baseline();
 	fPreTrgSamples = eventReader_->PreTriggerSamples();
 	int BufferSamples = eventReader_->BufferSamples();
+	if (eventReader_->FWVersion() == 10){
+		if (eventReader_->TriggerType() >= 8){
+			fPreTrgSamples = eventReader_->PreTriggerSamples2();
+			BufferSamples  = eventReader_->BufferSamples2();
+		}
+	}
 	int TriggerFT = eventReader_->TriggerFT();
 	int FTBit = eventReader_->GetFTBit();
 	int ErrorBit = eventReader_->GetErrorBit();
@@ -932,7 +959,6 @@ void next::RawDataInput::ReadIndiaPmt(int16_t * buffer, unsigned int size){
 	//Create digits and waveforms for active channels
 	CreatePMTs(&*pmtDgts_, pmtPosition, &(fec_chmask[fFecId]), BufferSamples, ZeroSuppression);
 	setActiveSensors(&(fec_chmask[fFecId]), &*pmtDgts_, pmtPosition);
-
 
 	for(unsigned int i=0; i<pmtDgts_->size(); i++){
 		int elecID = (*pmtDgts_)[i].chID();
@@ -991,7 +1017,7 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 	int FWVersion = eventReader_->FWVersion();
 
 	int maxChannels = 8;
-	if (FWVersion == 9){
+	if (FWVersion >= 9){
 		maxChannels = 12;
 	}
 
@@ -1013,7 +1039,7 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 			if (dualCh){
 				dualChannels[ElecID] = dualCh;
 				int pairCh = channelsRelation[ElecID];
-				if (FWVersion == 9){
+				if (FWVersion >= 9){
 					pairCh = channelsRelationIndia[ElecID];
 				}
 				dualChannels[pairCh] = dualCh;
@@ -1046,7 +1072,7 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 		}
 	}
 
-	if(fwversion == 9){
+	if(fwversion >= 9){
 		/***************************************
 		 * 2 -> 0,2,4,6,8,12,14,16,18,20,22    *
 		 * 3 -> 1,3,5,7,9,11,13,15,17,19,21,23 *
@@ -1069,6 +1095,12 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 void next::RawDataInput::computeNextFThm(int * nextFT, int * nextFThm, next::EventReader * reader){
 	int PreTrgSamples = reader->PreTriggerSamples();
 	int BufferSamples = reader->BufferSamples();
+	if (reader->FWVersion() == 10){
+		BufferSamples  = reader->BufferSamples2();
+		if (reader->TriggerType() >= 8){
+			PreTrgSamples = reader->PreTriggerSamples2();
+		}
+	}
 	int FTBit         = reader->GetFTBit();
 	int TriggerFT     = reader->TriggerFT();
 
@@ -1105,6 +1137,11 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 	int ZeroSuppression = eventReader_->ZeroSuppression();
 	unsigned int numberOfFEB = eventReader_->NumberOfChannels();
 	int BufferSamples = eventReader_->BufferSamples();
+	if (eventReader_->FWVersion() == 10){
+		if (eventReader_->TriggerType() >= 8){
+			BufferSamples  = eventReader_->BufferSamples2();
+		}
+	}
 
 	int ChannelMask = eventReader_->ChannelMask();
 //	std::cout << "fec: " << FecId << "\tsipm channel mask: " << ChannelMask << std::endl;
@@ -1198,9 +1235,14 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 					if(time < 1){
 						previousFT = FT;
 					}else{
+						int BufferSamplesFT  = eventReader_->BufferSamples();
+						if (eventReader_->FWVersion() == 10){
+							BufferSamplesFT  = eventReader_->BufferSamples2();
+						}
+
 						//New FT only after reading all FEBs in the FEC
 						if (j == 0){
-							nextFT = ((previousFT + 1) & 0x0FFFF) % (BufferSamples/40);
+							nextFT = ((previousFT + 1) & 0x0FFFF) % (BufferSamplesFT/40);
 						}else{
 							nextFT = previousFT;
 						}
@@ -1308,6 +1350,12 @@ int next::RawDataInput::computeSipmTime(int16_t * &ptr, next::EventReader * read
 	int TriggerFT = reader->TriggerFT();
 	int PreTrgSamples = reader->PreTriggerSamples();
 	int BufferSamples = reader->BufferSamples();
+	if (reader->FWVersion() == 10){
+		BufferSamples  = reader->BufferSamples2();
+		if (reader->TriggerType() >= 8){
+			PreTrgSamples = reader->PreTriggerSamples2();
+		}
+	}
 	int ZeroSuppression = reader->ZeroSuppression();
 
 	int FT = (*ptr) & 0x0FFFF;
@@ -1546,8 +1594,8 @@ void next::RawDataInput::decodeChargeIndiaPmtZS(int16_t* &ptr, next::DigitCollec
 void CreateSiPMs(next::DigitCollection * sipms, int * positions){
 	///Creating one class Digit per each SiPM
 	int elecID;
-	sipms->reserve(1792);
-	for (int ch=0; ch<1792; ch++){
+	sipms->reserve(NSIPMS);
+	for (int ch=0; ch<NSIPMS; ch++){
 		elecID = PositiontoSipmID(ch);
 		sipms->emplace_back(elecID, next::digitType::RAW, next::chanType::SIPM);
 		positions[ch] = sipms->size() - 1;
@@ -1601,7 +1649,7 @@ void next::RawDataInput::writeEvent(){
 	DigitCollection sipms;
 	pmts.reserve(32);
 	blrs.reserve(32);
-	sipms.reserve(1792);
+	sipms.reserve(NSIPMS);
 
 	auto erIt = pmtDgts_->begin();
 	while ( erIt != pmtDgts_->end() ){
@@ -1645,7 +1693,7 @@ void next::RawDataInput::writeEvent(){
 			}
 		}
 
-		if(fwVersionPmt == 9){
+		if(fwVersionPmt >= 9){
 			int chid = (*erIt).chID();
 			if ((*erIt).active()){
 				// 0-11 ->   0- 11 Real

@@ -31,6 +31,7 @@ namespace next {
 	void readWordCount(int16_t* &ptr);
 	void readEventID(int16_t* &ptr);
 	void readEventConf(int16_t* &ptr);
+	void readEventConfJuliett(int16_t* &ptr);
 	void readFecID(int16_t* &ptr);
 	void readIndiaFecID(int16_t* &ptr);
 	void readCTandFTh(int16_t* &ptr);
@@ -51,7 +52,9 @@ namespace next {
     void SetDualModeBit(int dual); //This one is need now fot tests
     unsigned int NumberOfChannels() const;
     int PreTriggerSamples() const;
+    int PreTriggerSamples2() const;
     int BufferSamples() const;
+    int BufferSamples2() const;
     int TriggerFT() const;
     int Pedestal(int);
     int GetFTBit() const;
@@ -62,7 +65,9 @@ namespace next {
     int TriggerType() const;
 
     void SetPreTriggerSamples(int PreTriggerSamples); //Needed for tests
+    void SetPreTriggerSamples2(int PreTriggerSamples); //Needed for tests
     void SetBufferSamples(int BufferSamples); //Needed for tests
+    void SetBufferSamples2(int BufferSamples); //Needed for tests
     void SetFTBit(int FTBit); //Needed for tests
     void SetTriggerFT(int TriggerFT); //Needed for tests
 
@@ -79,7 +84,9 @@ namespace next {
     int fChannelMask;
     std::vector <int> peds;
     int fPreTriggerSamples;
+    int fPreTriggerSamples2;
     int fBufferSamples;
+    int fBufferSamples2;
     int fTriggerFT;
     int fTriggerType;
     int fTriggerCounter;
@@ -108,7 +115,9 @@ namespace next {
   inline int EventReader::ChannelMask() const {return fChannelMask;}
   inline unsigned int EventReader::NumberOfChannels() const {return fNumberOfChannels;}
   inline int EventReader::PreTriggerSamples() const {return fPreTriggerSamples;}
+  inline int EventReader::PreTriggerSamples2() const {return fPreTriggerSamples2;}
   inline int EventReader::BufferSamples() const  {return fBufferSamples;}
+  inline int EventReader::BufferSamples2() const  {return fBufferSamples2;}
   inline int EventReader::TriggerFT() const {return fTriggerFT;}
   inline int EventReader::GetFTBit() const { return fFTBit; }
   inline int EventReader::GetErrorBit() const {return fErrorBit;}
@@ -120,7 +129,9 @@ namespace next {
   inline void EventReader::SetDualModeBit(int dual) {fDualModeBit = dual;}
 
   inline void EventReader::SetPreTriggerSamples(int PreTriggerSamples) {fPreTriggerSamples = PreTriggerSamples;}
+  inline void EventReader::SetPreTriggerSamples2(int PreTriggerSamples) {fPreTriggerSamples2 = PreTriggerSamples;}
   inline void EventReader::SetBufferSamples(int BufferSamples) {fBufferSamples = BufferSamples;}
+  inline void EventReader::SetBufferSamples2(int BufferSamples) {fBufferSamples2 = BufferSamples;}
   inline void EventReader::SetFTBit(int FTBit) {fFTBit = FTBit;}
   inline void EventReader::SetTriggerFT(int TriggerFT) {fTriggerFT = TriggerFT;}
 
