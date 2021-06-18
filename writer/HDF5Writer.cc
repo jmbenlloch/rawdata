@@ -329,20 +329,23 @@ void next::HDF5Writer::sortPmts(std::vector<next::Digit*> &sorted_sensors,
 
 	// Create vector for sensor ids of channels received
 	std::vector<int> sensor_ids;
-	for(unsigned int i=0; i<sensors.size(); i++){
-		sensor_ids.emplace_back(_sensors.elecToSensor(sensors[i].chID()));
+	for(unsigned int i=0; i<12; i++){ // FIX: Next-White's PMT number
+		//sensor_ids.emplace_back(_sensors.elecToSensor(sensors[i].chID()));
+		sensor_ids.emplace_back(i);
 	}
 	// Sort them and create a map to get the position for each one
 	std::sort(sensor_ids.begin(), sensor_ids.end());
 	std::map<int,int> sensorid_order;
 	for(unsigned int i=0; i<sensor_ids.size(); i++){
 		sensorid_order[sensor_ids[i]] = i;
+		// std::cout << "sensorid_order: " << sensor_ids[i] << ", " << i << std::endl;
 	}
 
 	// Write them sorted
 	for(unsigned int i=0; i<sensors.size(); i++){
 		sensorid = _sensors.elecToSensor(sensors[i].chID());
 		if(sensorid >= 0){
+			// std::cout << "Channel id: " << sensors[i].chID()  << ", sid: " << sensorid << ", order: " << sensorid_order[sensorid] << std::endl;
 			int position = sensorid_order[sensorid];
 			sorted_sensors[position] = &(sensors[i]);
 		}
