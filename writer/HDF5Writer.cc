@@ -108,6 +108,7 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	int total_pmts  = _sensors.getNumberOfPmts();
 	int total_blrs  = _sensors.getNumberOfPmts();
 	int total_sipms = _sensors.getNumberOfSipms();
+	// std::cout << "total_pmts: " << total_pmts << std::endl;
 	hsize_t npmt   = pmts.size();
 	hsize_t nblr   = blrs.size();
 	hsize_t nsipm = sipms.size();
@@ -229,6 +230,12 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 		sortPmts(sorted_blrs, blrs);
 		sortSipms(sorted_sipms, sipms);
 	}
+
+	// for(unsigned int i=0; i<sorted_pmts.size(); i++){
+	//     if (sorted_pmts[i] != 0){
+	//         std::cout << "[" << i << "] Sorted channel id: " << sorted_pmts[i]->chID() << std::endl;
+	//     }
+	// }
 
 	//Trigger channels elecID
 	std::vector<int> triggers(48, 0);
@@ -404,27 +411,27 @@ void next::HDF5Writer::StoreTriggerChannels(std::vector<next::Digit*> sensors,
 	delete[] data;
 }
 
-//For PMTs missing sensors are filled at the end
+//For PMTs missing sensors are filled in place
 void next::HDF5Writer::StorePmtWaveforms(std::vector<next::Digit*> sensors,
 	   	hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx){
 	short int *data = new short int[nsensors * datasize];
 	int index = 0;
-	int activeSensors = 0;
 
 	for(unsigned int sid=0; sid < sensors.size(); sid++){
 		if(sensors[sid]){
-			activeSensors++;
 			auto wf = sensors[sid]->waveform();
 			for(unsigned int samp=0; samp<sensors[sid]->nSamples(); samp++) {
 				data[index] = (short int) wf[samp];
 				index++;
 			}
 		}
-	}
-
-	for(unsigned int sid=0; sid < (nsensors-activeSensors) * datasize; sid++){
-			data[index] = (short int) 0;
-			index++;
+		else{
+			// std::cout << "datasize: " << datasize << std::endl;
+			for(unsigned int samp=0; samp<datasize; samp++) {
+				data[index] = (short int) 0;
+				index++;
+			}
+		}
 	}
 
 	WriteWaveforms(data, dataset, nsensors, datasize, dset_idx);
