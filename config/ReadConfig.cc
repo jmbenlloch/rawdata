@@ -38,6 +38,7 @@ void ReadConfig::parse(){
 	_trgCode2   = _obj.get("trg_code2", 9).asInt();
 	_splitTrg   = _obj.get("split_trg", false).asBool();
 	_nodb       = _obj.get("no_db", false).asBool();
+	_compressed = _obj.get("compressed", false).asBool();
 	_discard    = _obj.get("discard", true).asBool();
 	_copyEvts   = _obj.get("copy_evts", false).asBool();
 	_skip       = _obj.get("skip", 0).asInt();
@@ -66,4 +67,5 @@ void ReadConfig::parse(){
 	_log->info("Skip events: {}", _skip);
 	_log->info("Host: {}", _host);
 	_log->info("Database name: {}", _dbname);
+	_log->info("Compressed data: {}", _compressed);
 }

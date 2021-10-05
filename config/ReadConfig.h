@@ -28,6 +28,7 @@ class ReadConfig {
 		int skip();
 		bool discard();
 		bool copyEvts();
+		bool compressed();
 		bool splitTrg();
 		int  trgCode1();
 		int  trgCode2();
@@ -59,6 +60,7 @@ class ReadConfig {
 		bool _splitTrg;
 		int _trgCode1;
 		int _trgCode2;
+		bool _compressed;
 		std::string _host;
 		std::string _user;
 		std::string _passwd;
@@ -83,6 +85,8 @@ inline int ReadConfig::max_events(){return _maxevents;}
 inline bool ReadConfig::two_files(){return _twofiles;}
 
 inline bool ReadConfig::no_db(){return _nodb;}
+
+inline bool ReadConfig::compressed(){return _compressed;}
 
 inline bool ReadConfig::discard(){return _discard;}
 

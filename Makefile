@@ -19,6 +19,10 @@ huffman:
 	$(CC) -c decode_huffman.cc $(CXXFLAGS) $(INCFLAGS)
 	$(CC) -g -o decode_huffman decode_huffman.o ReadConfig.o RawDataInput.o DATEEventHeader.o Digit.o EventReader.o HDF5Writer.o hdf5_functions.o database.o CopyEvents.o sensors.o huffman.o $(CXXFLAGS) $(INCFLAGS)
 
+sipm:
+	$(CC) -c decode_sipm_huffman.cc $(CXXFLAGS) $(INCFLAGS)
+	$(CC) -g -o decode_sipm_huffman decode_sipm_huffman.o ReadConfig.o RawDataInput.o DATEEventHeader.o Digit.o EventReader.o HDF5Writer.o hdf5_functions.o database.o CopyEvents.o sensors.o huffman.o $(CXXFLAGS) $(INCFLAGS)
+
 config:
 	$(CC) -c config/ReadConfig.cc $(CXXFLAGS) $(INCFLAGS)
 
