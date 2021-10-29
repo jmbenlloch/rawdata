@@ -34,7 +34,7 @@ def show_and_wait():
     plt.clf()
 
 
-def plot_waveforms(waveforms, sensors, evt, *, wf_type="PMT", range=(None,),
+def plot_waveforms(waveforms, sensors, baselines, evt, *, wf_type="PMT", range=(None,),
                    overlay=False, sum=False,
                    zoomx=False, zoomy=False, dual=False):
     range = slice(*range)
@@ -44,7 +44,7 @@ def plot_waveforms(waveforms, sensors, evt, *, wf_type="PMT", range=(None,),
     if   wf_type == "PMT" : time /= 40
     elif wf_type == "BLR" : time /= 40
     elif wf_type == "SiPM": pass
-    else: raise ValueError("Unrecognized wf type {}. ".format(wf_type) + 
+    else: raise ValueError("Unrecognized wf type {}. ".format(wf_type) +
                            "Valid options: are 'PMT', 'BLR' and 'SiPM'")
 
     if sum: wf_type += " SUM"
@@ -68,7 +68,7 @@ def plot_waveforms(waveforms, sensors, evt, *, wf_type="PMT", range=(None,),
             customize_plot(zoomx, zoomy if zoomy else ylim, wf_type, evt, ID[0])
             show_and_wait()
     else:
-        for wf, ID, color in zip(waveforms[0][range], sensors[range], _colors):
+        for i, (wf, ID, color) in enumerate(zip(waveforms[0][range], sensors[range], _colors)):
             ymin, ymax = min(wf), max(wf)
             if ymin < gmin: gmin = ymin
             if ymax > gmax: gmax = ymax
@@ -78,9 +78,17 @@ def plot_waveforms(waveforms, sensors, evt, *, wf_type="PMT", range=(None,),
                 sum_wf = sum_wf + bls_wf * (1 if "SiPM" in wf_type else -1)
             else:
                 plt.plot(wf, drawstyle="steps", label=str(ID[0]), c=color)
+                if baselines:
+                    plt.axhline(y=baselines[i], color='r', linestyle='-')
 
             if not overlay and not sum:
+                if baselines:
+                    if ymin >= baselines[i]:
+                        ymin = 0.99 * baselines[i]
+                    if ymax <= baselines[i]:
+                        ymax = 1.01 * baselines[i]
                 ylim = (0.99 * ymin, 1.01 * ymax)
+
                 customize_plot(zoomx, zoomy if zoomy else ylim, wf_type, evt, ID[0])
                 show_and_wait()
 
@@ -112,46 +120,33 @@ def plot_file(filename, rwf=True, blr=True, sipm=True, sipm_range=(None,),
 
         for evt in range(first, len(file.root.Run.events.cols.evt_number), evt_step):
             evt_number = event_numbers[evt][0]
+
+            pmt_baselines = None
+            if "RD/pmt_baselines"  in file.root:
+                pmt_baselines = file.root.RD.pmt_baselines[evt:evt+1]
+
             if rwf  and "RD/pmtrwf"  in file.root and "Sensors/DataPMT"  in file.root:
                 plot_waveforms(file.root.RD     . pmtrwf [evt : evt+evt_step],
-                               file.root.Sensors.DataPMT [:],
+                               file.root.Sensors.DataPMT [:], pmt_baselines,
                                evt_number, wf_type="PMT", overlay=overlay, sum=sum,
                                zoomx=zoomx, zoomy=zoomy, dual=dual)
+
+            blr_baselines = None
+            if "RD/blr_baselines"  in file.root:
+                blr_baselines = file.root.RD.blr_baselines[evt:evt+1]
+
             if blr  and "RD/pmtblr"  in file.root and "Sensors/DataBLR"  in file.root:
                 plot_waveforms(file.root.RD     . pmtblr [evt : evt+evt_step],
-                               file.root.Sensors.DataBLR [:],
+                               file.root.Sensors.DataBLR [:], blr_baselines,
                                evt_number, wf_type="BLR", overlay=overlay, sum=sum,
                                zoomx=zoomx, zoomy=zoomy, dual=dual)
             if sipm and "RD/sipmrwf" in file.root and "Sensors/DataSiPM" in file.root:
                 plot_waveforms(file.root.RD     .sipmrwf [evt : evt + evt_step],
-                               file.root.Sensors.DataSiPM[:],
+                               file.root.Sensors.DataSiPM[:], None,
                                evt_number, wf_type="SiPM", range=sipm_range,
                                overlay=overlay, sum=sum,
                                zoomx=zoomx, zoomy=zoomy, dual=dual)
 
-
-def _plot_waveform(waveforms, sensors):
-    nevts, nsensors, _ = waveforms.shape
-    for evt in range(nevts):
-#    for evt in range(1):
-        for s in range(nsensors):
-#        for s in range(640, 1000):
-#        for s in range(128, 128 + 64):
-            data = waveforms[evt, s, :]
-            ymin = min(data)
-            ymax = max(data)
-            ymin = ymin - 0.1 * ymin
-            ymax = ymax + 0.1 * ymax
-
-            title = "Evt {}, elecid {}".format(evt, sensors[s][0])
-
-            plt.ion()
-            plt.plot(data, drawstyle='steps')
-            plt.ylim(ymin, ymax)
-            plt.title(title)
-            plt.show()
-            _ = input("Press [enter] to continue.")
-            plt.clf()
 
 if __name__ == '__main__':
     def sipm_index(sensor_id):
