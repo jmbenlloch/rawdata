@@ -174,12 +174,20 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 			if(triggerInfo.size() > 0){
 				_triggerd[ifile] = createWaveform(triggerG, trigger_name, total_pmts);
 			}
+
+			//Create baseline table
+			std::string baseline_name = std::string("pmt_baselines");
+			_pmtBaseline[ifile] = createBaselines(group, baseline_name, total_pmts);
 		}
 
 		//Create blr array
 		if (_hasBlrs){
 			std::string blr_name = std::string("pmtblr");
 			_pmtblr[ifile] = createWaveforms(group, blr_name, total_pmts, pmtDatasize);
+
+			//Create baseline table
+			std::string baseline_name = std::string("blr_baselines");
+			_blrBaseline[ifile] = createBaselines(group, baseline_name, total_pmts);
 		}
 
 		//Create sipms array
@@ -254,10 +262,14 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 			StoreTriggerChannels(sorted_pmts, triggers, total_pmts, pmtDatasize,
 					             _triggerd[ifile], _ievt[ifile]);
 		}
+
+		StorePmtBaselines(sorted_pmts, total_pmts, _pmtBaseline[ifile], _ievt[ifile]);
 	}
 	if (_hasBlrs){
 		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize,
 			   	_pmtblr[ifile], _ievt[ifile]);
+
+		StorePmtBaselines(sorted_blrs, total_pmts, _blrBaseline[ifile], _ievt[ifile]);
 	}
 	if (_hasSipms){
 		StoreSipmWaveforms(sorted_sipms, total_sipms, sipmDatasize,
@@ -436,6 +448,22 @@ void next::HDF5Writer::StorePmtWaveforms(std::vector<next::Digit*> sensors,
 
 	WriteWaveforms(data, dataset, nsensors, datasize, dset_idx);
 	delete[] data;
+}
+
+void next::HDF5Writer::StorePmtBaselines(std::vector<next::Digit*> sensors,
+	   	hsize_t nsensors, hsize_t dataset, int dset_idx){
+	int data[nsensors];
+	int index = 0;
+
+	for(int i=0; i<sensors.size(); i++){
+		if(sensors[i]){
+			int ch = sensors[i]->chID();
+			data[i] = sensors[i]->pedestal();
+		}else{
+			data[i] = 0;
+		}
+	}
+	WriteBaselines(data, dataset, nsensors, dset_idx);
 }
 
 //For SIPMs missing sensors are filled in place

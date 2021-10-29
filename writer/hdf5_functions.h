@@ -40,6 +40,9 @@ hid_t createWaveforms(hid_t group, std::string& dataset, hsize_t nsensors, hsize
 void WriteWaveform(short int * data, hid_t dataset, hsize_t nsamples, hsize_t evt);
 hid_t createWaveform(hid_t group, std::string& dataset, hsize_t nsamples);
 
+void WriteBaselines(int * data, hid_t dataset, hsize_t nsamples, hsize_t evt);
+hid_t createBaselines(hid_t group, std::string& dataset, hsize_t nsensors);
+
 hid_t createTable(hid_t group, std::string& table_name, hsize_t memtype);
 hid_t createEventType();
 hid_t createRunType();

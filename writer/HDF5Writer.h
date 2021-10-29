@@ -60,6 +60,8 @@ namespace next{
 	size_t _pmtblr[2];
 	size_t _sipmrd[2];
 	size_t _memtypeEvt;
+	size_t _pmtBaseline[2];
+	size_t _blrBaseline[2];
 
     //! counter for writen events
     size_t _ievt[2];
@@ -82,6 +84,7 @@ namespace next{
     void Write(DigitCollection & pmts, DigitCollection& blrs, DigitCollection& extPmt, DigitCollection& sipms, std::vector<std::pair<std::string, int> > triggerInfo, std::vector<int> triggerChans, int triggerType, std::uint64_t timestamp, unsigned int evt_number, size_t run_number);
 
 	void StorePmtWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx);
+	void StorePmtBaselines(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t dataset, int dset_idx);
 	void StoreSipmWaveforms(std::vector<next::Digit*> sensors, hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx);
 	void StoreTriggerChannels(std::vector<next::Digit*> sensors, std::vector<int> triggers, hsize_t nsensors, hsize_t datasize, hsize_t dataset, int dset_idx);
 

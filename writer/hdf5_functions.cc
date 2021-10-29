@@ -137,6 +137,39 @@ hid_t createWaveform(hid_t group, std::string& dset_name, hsize_t nsamples){
 
 }
 
+
+hid_t createBaselines(hid_t group, std::string& dset_name, hsize_t nsamples){
+	const hsize_t ndims = 2;
+	hid_t file_space;
+
+	//Create 3D dataspace (evt,sensor,data).
+	//First dimension is unlimited (initially 0)
+	hsize_t dims[ndims] = {0, nsamples};
+	hsize_t max_dims[ndims] = {H5S_UNLIMITED, nsamples};
+	file_space = H5Screate_simple(ndims, dims, max_dims);
+
+	// Create a dataset creation property list
+	// The layout of the dataset have to be chunked when using unlimited dimensions
+	hid_t plist = H5Pcreate(H5P_DATASET_CREATE);
+	H5Pset_layout(plist, H5D_CHUNKED);
+	hsize_t chunk_dims[ndims] = {1, 32768};
+	if(nsamples < 32768){
+		chunk_dims[1] = nsamples;
+	}
+
+	H5Pset_chunk(plist, ndims, chunk_dims);
+
+	//Set compression
+	H5Pset_deflate (plist, 4);
+
+	//Create dataset
+	hid_t dataset = H5Dcreate(group, dset_name.c_str(), H5T_NATIVE_SHORT,
+			file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
+	return dataset;
+
+}
+
+
 void WriteWaveforms(short int * data, hid_t dataset, hsize_t nsensors,
 	   	hsize_t nsamples, hsize_t evt){
 	hid_t memspace, file_space;
@@ -182,6 +215,30 @@ void WriteWaveform(short int * data, hid_t dataset, hsize_t nsamples, hsize_t ev
 	H5Sclose(file_space);
 	H5Sclose(memspace);
 }
+
+void WriteBaselines(int * data, hid_t dataset, hsize_t nsamples, hsize_t evt){
+	hid_t memspace, file_space;
+	//Create memspace for one PMT row
+	const hsize_t ndims = 2;
+	hsize_t dims[ndims] = {1, nsamples};
+	memspace = H5Screate_simple(ndims, dims, NULL);
+
+	//Extend PMT dataset
+	dims[0] = evt+1;
+	dims[1] = nsamples;
+	H5Dset_extent(dataset, dims);
+
+	//Write PMT waveforms
+	file_space = H5Dget_space(dataset);
+	hsize_t start[2] = {evt, 0};
+	hsize_t count[2] = {1, nsamples};
+	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
+	H5Dwrite(dataset, H5T_NATIVE_SHORT, memspace, file_space, H5P_DEFAULT, data);
+	H5Sclose(file_space);
+	H5Sclose(memspace);
+}
+
+
 
 
 void writeEvent(evt_t * evtData, hid_t dataset, hid_t memtype, hsize_t evt_number){
