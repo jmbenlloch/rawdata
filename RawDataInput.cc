@@ -1053,8 +1053,23 @@ void writePmtPedestals(next::EventReader * reader, next::DigitCollection * pmts,
 	int elecID;
 	for(int j=0; j<elecIDs->size(); j++){
 		elecID = (*elecIDs)[j];
+
+		// Only 6 baselines are sent per FEC
+		//  2 -> 0,2,4,6,8,10,12,14,16,18,20,22
+		//       0,2,4,6,8,10      -> 0,1,2,3,4,5
+		//       12,14,16,18,20,22 -> 0,1,2,3,4,5
+		//  3 -> 1,3,5,7,9,11,13,15,17,19,21,23
+		//       1,3,5,7,9,11      -> 0,1,2,3,4,5
+		//       13,15,17,19,21,23 -> 0,1,2,3,4,5
+		// 10 -> 24,26,28, ..., 46
+		//       24,26,28,...      -> 0,1,2,3,4,5
+		//       36,38,40,...      -> 0,1,2,3,4,5
+		// 11 -> 25,27,29, ..., 47
+		//       25,27,29,...      -> 0,1,2,3,4,5
+		//       37,39,41,...      -> 0,1,2,3,4,5
+		int baseline_index = (elecID%12) / 2;
 		auto dgt = pmts->begin() + positions[elecID];
-		dgt->setPedestal(reader->Pedestal(j));
+		dgt->setPedestal(reader->Pedestal(baseline_index));
 	}
 }
 
@@ -1074,7 +1089,7 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 
 	if(fwversion >= 9){
 		/***************************************
-		 * 2 -> 0,2,4,6,8,12,14,16,18,20,22    *
+		 * 2 -> 0,2,4,6,8,10,12,14,16,18,20,22 *
 		 * 3 -> 1,3,5,7,9,11,13,15,17,19,21,23 *
 		 * 10-> 24,26,28, ..., 46              *
 		 * 11-> 25,27,29, ..., 47              *

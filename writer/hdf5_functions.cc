@@ -163,7 +163,7 @@ hid_t createBaselines(hid_t group, std::string& dset_name, hsize_t nsamples){
 	H5Pset_deflate (plist, 4);
 
 	//Create dataset
-	hid_t dataset = H5Dcreate(group, dset_name.c_str(), H5T_NATIVE_SHORT,
+	hid_t dataset = H5Dcreate(group, dset_name.c_str(), H5T_NATIVE_INT,
 			file_space, H5P_DEFAULT, plist, H5P_DEFAULT);
 	return dataset;
 
@@ -233,7 +233,7 @@ void WriteBaselines(int * data, hid_t dataset, hsize_t nsamples, hsize_t evt){
 	hsize_t start[2] = {evt, 0};
 	hsize_t count[2] = {1, nsamples};
 	H5Sselect_hyperslab(file_space, H5S_SELECT_SET, start, NULL, count, NULL);
-	H5Dwrite(dataset, H5T_NATIVE_SHORT, memspace, file_space, H5P_DEFAULT, data);
+	H5Dwrite(dataset, H5T_NATIVE_INT, memspace, file_space, H5P_DEFAULT, data);
 	H5Sclose(file_space);
 	H5Sclose(memspace);
 }

@@ -78,15 +78,15 @@ def plot_waveforms(waveforms, sensors, baselines, evt, *, wf_type="PMT", range=(
                 sum_wf = sum_wf + bls_wf * (1 if "SiPM" in wf_type else -1)
             else:
                 plt.plot(wf, drawstyle="steps", label=str(ID[0]), c=color)
-                if baselines:
-                    plt.axhline(y=baselines[i], color='r', linestyle='-')
+                if len(baselines) > 0:
+                    plt.axhline(y=baselines[0][i], color='r', linestyle='-')
 
             if not overlay and not sum:
-                if baselines:
-                    if ymin >= baselines[i]:
-                        ymin = 0.99 * baselines[i]
-                    if ymax <= baselines[i]:
-                        ymax = 1.01 * baselines[i]
+                if len(baselines) > 0:
+                    if ymin >= baselines[0][i]:
+                        ymin = 0.99 * baselines[0][i]
+                    if ymax <= baselines[0][i]:
+                        ymax = 1.01 * baselines[0][i]
                 ylim = (0.99 * ymin, 1.01 * ymax)
 
                 customize_plot(zoomx, zoomy if zoomy else ylim, wf_type, evt, ID[0])
@@ -132,8 +132,8 @@ def plot_file(filename, rwf=True, blr=True, sipm=True, sipm_range=(None,),
                                zoomx=zoomx, zoomy=zoomy, dual=dual)
 
             blr_baselines = None
-            if "RD/blr_baselines"  in file.root:
-                blr_baselines = file.root.RD.blr_baselines[evt:evt+1]
+            if "RD/pmt_baselines"  in file.root:
+                blr_baselines = file.root.RD.pmt_baselines[evt:evt+1]
 
             if blr  and "RD/pmtblr"  in file.root and "Sensors/DataBLR"  in file.root:
                 plot_waveforms(file.root.RD     . pmtblr [evt : evt+evt_step],
