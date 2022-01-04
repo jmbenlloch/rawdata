@@ -25,7 +25,8 @@ void getHuffmanFromDB(ReadConfig * config, Huffman * huffman, int run_number){
 		finish_with_error(con, logerr);
 	}
 
-	std::string sql = "SELECT value, code from HuffmanCodes WHERE MinRun <= RUN and MaxRun >= RUN";
+	//std::string sql = "SELECT value, code from HuffmanCodes WHERE MinRun <= RUN and MaxRun >= RUN";
+	std::string sql = "SELECT value, code from HuffmanCodesSipm WHERE MinRun <= RUN and MaxRun >= RUN";
 
 	size_t start_pos = sql.find("RUN");
 	while(start_pos != std::string::npos){
@@ -48,6 +49,7 @@ void getHuffmanFromDB(ReadConfig * config, Huffman * huffman, int run_number){
 	MYSQL_ROW row;
 
 	while ((row = mysql_fetch_row(result))){
+		std::cout << "row: " << row[0] << ", " << row[1] << std::endl;
 		parse_huffman_line(std::stoi(row[0]), row[1], huffman);
 	}
 

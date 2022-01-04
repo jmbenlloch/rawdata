@@ -219,9 +219,9 @@ void process_evt(int16_t * buffer, int size, bool compressed, Huffman * huffman)
 
 		printf("\n\n\n");
 
-		// for (int i=0; i<16; i++){
-		//     printf("[%d]: 0x%04x\n", payload_ptr-buffer+i, *(payload_ptr+i));
-		// }
+//		for (int i=0; i<40; i++){
+//		    printf("[%d]: 0x%04x\n", payload_ptr-buffer+i, *(payload_ptr+i));
+//		}
 
 		int FEBId = ((*payload_ptr) & 0x0FC00) >> 10;
 		feb_chmask.emplace(FEBId, std::vector<int>());
@@ -262,7 +262,6 @@ int main(int argc, char* argv[]){
 
 	std::string filename = std::string(argv[1]);
 	ReadConfig config = ReadConfig(filename);
-
 
 	bool compressed = config.compressed();
 	std::cout << "Compressed data: " << compressed << std::endl;
