@@ -121,7 +121,7 @@ def plot_file(filename, rwf=True, blr=True, sipm=True, sipm_range=(None,),
         for evt in range(first, len(file.root.Run.events.cols.evt_number), evt_step):
             evt_number = event_numbers[evt][0]
 
-            pmt_baselines = None
+            pmt_baselines = []
             if "RD/pmt_baselines"  in file.root:
                 pmt_baselines = file.root.RD.pmt_baselines[evt:evt+1]
 
@@ -131,7 +131,7 @@ def plot_file(filename, rwf=True, blr=True, sipm=True, sipm_range=(None,),
                                evt_number, wf_type="PMT", overlay=overlay, sum=sum,
                                zoomx=zoomx, zoomy=zoomy, dual=dual)
 
-            blr_baselines = None
+            blr_baselines = []
             if "RD/pmt_baselines"  in file.root:
                 blr_baselines = file.root.RD.pmt_baselines[evt:evt+1]
 
@@ -140,9 +140,11 @@ def plot_file(filename, rwf=True, blr=True, sipm=True, sipm_range=(None,),
                                file.root.Sensors.DataBLR [:], blr_baselines,
                                evt_number, wf_type="BLR", overlay=overlay, sum=sum,
                                zoomx=zoomx, zoomy=zoomy, dual=dual)
+
+            sipm_baselines = []
             if sipm and "RD/sipmrwf" in file.root and "Sensors/DataSiPM" in file.root:
                 plot_waveforms(file.root.RD     .sipmrwf [evt : evt + evt_step],
-                               file.root.Sensors.DataSiPM[:], None,
+                               file.root.Sensors.DataSiPM[:], sipm_baselines,
                                evt_number, wf_type="SiPM", range=sipm_range,
                                overlay=overlay, sum=sum,
                                zoomx=zoomx, zoomy=zoomy, dual=dual)
