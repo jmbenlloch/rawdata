@@ -1039,8 +1039,11 @@ int next::RawDataInput::setDualChannels(next::EventReader * reader){
 			if (dualCh){
 				dualChannels[ElecID] = dualCh;
 				int pairCh = channelsRelation[ElecID];
-				if (FWVersion >= 9){
+				if (FWVersion == 9){
 					pairCh = channelsRelationIndia[ElecID];
+				}
+				if (FWVersion >= 10){
+					pairCh = channelsRelationJuliett[ElecID];
 				}
 				dualChannels[pairCh] = dualCh;
 			}
@@ -1087,7 +1090,7 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 		}
 	}
 
-	if(fwversion >= 9){
+	if(fwversion == 9){
 		/***************************************
 		 * 2 -> 0,2,4,6,8,10,12,14,16,18,20,22 *
 		 * 3 -> 1,3,5,7,9,11,13,15,17,19,21,23 *
@@ -1102,6 +1105,27 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 		if (fecid >= 10){
 			ElecID += 24;
 		}
+	}
+
+	if(fwversion >= 10){
+		// fec: 02: 000, 002, 004, 006, 008, 010, 012, 014, 016, 018, 020, 022
+		// fec: 03: 001, 003, 005, 007, 009, 011, 013, 015, 017, 019, 021, 023
+		// fec: 06: 024, 026, 028, 030, 032, 034, 036, 038, 040, 042, 044, 046
+		// fec: 07: 025, 027, 029, 031, 033, 035, 037, 039, 041, 043, 045, 047
+		// fec: 10: 048, 050, 052, 054, 056, 058, 060, 062, 064, 066, 068, 070
+		// fec: 11: 049, 051, 053, 055, 057, 059, 061, 063, 065, 067, 069, 071
+		// fec: 14: 072, 074, 076, 078, 080, 082, 084, 086, 088, 090, 092, 094
+		// fec: 15: 073, 075, 077, 079, 081, 083, 085, 087, 089, 091, 093, 095
+		// fec: 18: 096, 098, 100, 102, 104, 106, 108, 110, 112, 114, 116, 118
+		// fec: 19: 097, 099, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119
+		// fec: 22: 120, 122, 124, 126, 128, 130, 132, 134, 136, 138, 140, 142
+		// fec: 23: 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143
+		// fec: 26: 144, 146, 148, 150, 152, 154, 156, 158, 160, 162, 164, 166
+		// fec: 27: 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167
+		ElecID = channel * 2 + (fecid % 2);
+		ElecID += ((fecid - 2) / 4) * 24;
+
+		printf("fecid: %d\t channel: %d\t elecid: %d\n", fecid, channel, ElecID);
 	}
 
 	return ElecID;
@@ -1708,7 +1732,7 @@ void next::RawDataInput::writeEvent(){
 			}
 		}
 
-		if(fwVersionPmt >= 9){
+		if(fwVersionPmt == 9){
 			int chid = (*erIt).chID();
 			if ((*erIt).active()){
 				// 0-11 ->   0- 11 Real
@@ -1736,6 +1760,45 @@ void next::RawDataInput::writeEvent(){
 			}
 			++erIt;
 		}
+
+		if(fwVersionPmt >= 10){
+			int chid = (*erIt).chID();
+			if ((*erIt).active()){
+				//  0 -  11 ->   0 - 11 Real
+				// 12 -  23 ->   0 - 11 Dual
+				// 24 -  35 ->  12 - 23 Real
+				// 36 -  47 ->  12 - 23 Dual
+				// 48 -  59 ->  24 - 35 Real
+				// 60 -  71 ->  24 - 35 Dual
+				// 72 -  83 ->  36 - 47 Real
+				// 84 -  95 ->  36 - 47 Dual
+				// 96 - 107 ->  48 - 59 Real
+				//108 - 119 ->  48 - 59 Dual
+				//120 - 131 ->  60 - 71 Real
+				//132 - 143 ->  60 - 71 Dual
+				//144 - 155 ->  72 - 83 Real
+				//156 - 167 ->  72 - 83 Dual
+
+				// Test code
+   /*              for (int j=0; j<168; j++){ */
+					// chid = j;
+					// int newid = chid - (int(chid / 12) % 2) * 12;
+					// newid = newid - int(newid / 12) / 2 * 12;
+					// printf("2-test-oldid: %d\t newid: %d\n", chid, newid);
+			/*     } */
+				int newid = chid - (int(chid / 12) % 2) * 12;
+				newid = newid - int(newid / 12) / 2 * 12;
+				(*erIt).setChID(newid);
+				printf("2-oldid: %d\t newid: %d\n", chid, newid);
+				if ((chid / 12) % 2 == 0){
+					pmts.push_back(*erIt);
+				}else{
+					blrs.push_back(*erIt);
+				}
+			}
+			++erIt;
+		}
+
 	}
 
 	auto date_header = (*headOut_).rbegin();
