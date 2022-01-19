@@ -1124,8 +1124,6 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 		// fec: 27: 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167
 		ElecID = channel * 2 + (fecid % 2);
 		ElecID += ((fecid - 2) / 4) * 24;
-
-		printf("fecid: %d\t channel: %d\t elecid: %d\n", fecid, channel, ElecID);
 	}
 
 	return ElecID;
@@ -1789,7 +1787,6 @@ void next::RawDataInput::writeEvent(){
 				int newid = chid - (int(chid / 12) % 2) * 12;
 				newid = newid - int(newid / 12) / 2 * 12;
 				(*erIt).setChID(newid);
-				printf("2-oldid: %d\t newid: %d\n", chid, newid);
 				if ((chid / 12) % 2 == 0){
 					pmts.push_back(*erIt);
 				}else{
