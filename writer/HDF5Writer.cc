@@ -256,24 +256,23 @@ void next::HDF5Writer::Write(DigitCollection& pmts, DigitCollection& blrs,
 	//Write waveforms
 	if (_hasPmts){
 		StorePmtWaveforms(sorted_pmts, total_pmts, pmtDatasize,
-			   	_pmtrd[ifile], _ievt[ifile]);
+				_pmtrd[ifile], _ievt[ifile]);
 		if(triggerInfo.size() > 0){
 			saveTriggerType(_triggerTable[ifile], triggerType, _ievt[ifile]);
-			StoreTriggerChannels(sorted_pmts, triggers, total_pmts, pmtDatasize,
-					             _triggerd[ifile], _ievt[ifile]);
+			StoreTriggerChannels(sorted_pmts, triggers, total_pmts, _triggerd[ifile], _ievt[ifile]);
 		}
 
 		StorePmtBaselines(sorted_pmts, total_pmts, _pmtBaseline[ifile], _ievt[ifile]);
 	}
 	if (_hasBlrs){
 		StorePmtWaveforms(sorted_blrs, total_pmts, pmtDatasize,
-			   	_pmtblr[ifile], _ievt[ifile]);
+				   _pmtblr[ifile], _ievt[ifile]);
 
 		StorePmtBaselines(sorted_blrs, total_pmts, _blrBaseline[ifile], _ievt[ifile]);
 	}
 	if (_hasSipms){
 		StoreSipmWaveforms(sorted_sipms, total_sipms, sipmDatasize,
-			   	_sipmrd[ifile], _ievt[ifile]);
+				   _sipmrd[ifile], _ievt[ifile]);
 	}
 
 	if(extPmt.size() > 0){
@@ -408,8 +407,7 @@ void next::HDF5Writer::sortSipms(std::vector<next::Digit*> &sorted_sensors,
 }
 
 void next::HDF5Writer::StoreTriggerChannels(std::vector<next::Digit*> sensors,
-		std::vector<int> triggers, hsize_t nsensors, hsize_t datasize,
-	   	hsize_t dataset, int dset_idx){
+		std::vector<int> triggers, hsize_t nsensors, hsize_t dataset, int dset_idx){
 	short int *data = new short int[nsensors];
 	for(int i=0; i<sensors.size(); i++){
 		if(sensors[i]){
