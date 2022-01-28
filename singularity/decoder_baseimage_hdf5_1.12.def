@@ -1,0 +1,26 @@
+BootStrap: docker
+From: ubuntu:bionic
+
+%files
+	eventDump /usr/bin/eventDump
+
+%post
+	apt-get update -y && \
+	apt-get install -y git make g++ gdb libhdf5-dev libhdf5-100 libjsoncpp1 libjsoncpp-dev libmysqlclient-dev wget && \
+	apt-get autoremove -y && \
+	apt-get clean -y && \
+	rm -rf /var/cache/apt/archives/* && \
+	rm -rf /var/lib/apt/lists/*
+
+	# Install hdf5
+	wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-1.12.1/src/hdf5-1.12.1.tar.gz
+	gzip -d hdf5-1.12.1.tar.gz && tar xvf hdf5-1.12.1.tar
+	cd hdf5-1.12.1 && ./configure --prefix=/usr && make -j 4 && make install && cd ..
+	rm -r hdf5-1.12.1 hdf5-1.12.1.tar
+
+	# Install libmysql for eventDump
+	mkdir libmysql
+	cd libmysql
+	wget http://launchpadlibrarian.net/212189159/libmysqlclient18_5.6.25-0ubuntu1_amd64.deb
+	dpkg -i libmysqlclient18_5.6.25-0ubuntu1_amd64.deb
+	rm libmysqlclient18_5.6.25-0ubuntu1_amd64.deb
