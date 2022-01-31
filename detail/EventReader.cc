@@ -6,7 +6,7 @@ namespace spd = spdlog;
 
 next::EventReader::EventReader(int verbose): fFWVersion(0), fFecType(0),
 	fFecId(0), fSequenceCounter(0), fWordCounter(0), fTimestamp(0),
-	fNumberOfChannels(0), fBaseline(false), fZeroSuppression(false),
+	fNumberOfChannels(0), fBaseline(false), fZeroSuppression(false), fCompressedData(false),
 	fChannelMask(0), peds(), fPreTriggerSamples(0), fBufferSamples(0),
 	fTriggerFT(0), fErrorBit(0), fDualModeBit(0), fDualModeMask(0),
 	verbose_(verbose)
@@ -53,6 +53,7 @@ void next::EventReader::readFormatID(int16_t* &ptr){
 	//Format ID H
 	fFecType         =  *ptr & 0x000F;
 	fZeroSuppression = (*ptr & 0x0010) >>  4;
+	fCompressedData  = (*ptr & 0x0020) >>  5;
 	fBaseline        = (*ptr & 0x0040) >>  6;
 	fDualModeBit     = (*ptr & 0x0080) >>  7;
 	fErrorBit        = (*ptr & 0x4000) >> 14;
@@ -67,6 +68,7 @@ void next::EventReader::readFormatID(int16_t* &ptr){
 		_log->debug("Fec type {}", fFecType);
 		_log->debug("Baseline {}", fBaseline);
 		_log->debug("Zero Suppression {}", fZeroSuppression);
+		_log->debug("Compressed data {}", fCompressedData);
 		_log->debug("Firmware version {}", fFWVersion);
 	}
 }

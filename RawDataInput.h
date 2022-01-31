@@ -177,7 +177,8 @@ private:
 
   bool fileError_, eventError_;
   ReadConfig * config_;
-  Huffman huffman_;
+  Huffman huffmanPmt_;
+  Huffman huffmanSipm_;
 
 };
 

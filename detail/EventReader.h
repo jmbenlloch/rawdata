@@ -47,6 +47,7 @@ namespace next {
     uint64_t TimeStamp() const;
     bool Baseline() const;
     bool ZeroSuppression() const;
+    bool CompressedData() const;
     int ChannelMask() const;
     void SetChannelMask(int mask); //This one is need now fot tests
     void SetDualModeBit(int dual); //This one is need now fot tests
@@ -81,6 +82,7 @@ namespace next {
     unsigned int fNumberOfChannels;
     bool fBaseline;
     bool fZeroSuppression;
+    bool fCompressedData;
     int fChannelMask;
     std::vector <int> peds;
     int fPreTriggerSamples;
@@ -112,6 +114,7 @@ namespace next {
   inline uint64_t EventReader::TimeStamp() const {return fTimestamp;}
   inline bool EventReader::Baseline() const {return fBaseline;}
   inline bool EventReader::ZeroSuppression() const {return fZeroSuppression;}
+  inline bool EventReader::CompressedData() const {return fCompressedData;}
   inline int EventReader::ChannelMask() const {return fChannelMask;}
   inline unsigned int EventReader::NumberOfChannels() const {return fNumberOfChannels;}
   inline int EventReader::PreTriggerSamples() const {return fPreTriggerSamples;}

@@ -50,13 +50,16 @@ next::RawDataInput::RawDataInput(ReadConfig * config, HDF5Writer * writer) :
 	config_ = config;
 
 	// Initialize huffman to NULL
-	huffman_.next[0] = NULL;
-	huffman_.next[1] = NULL;
+	huffmanPmt_.next[0] = NULL;
+	huffmanPmt_.next[1] = NULL;
+
+	huffmanSipm_.next[0] = NULL;
+	huffmanSipm_.next[1] = NULL;
 }
 
 
 Huffman* next::RawDataInput::getHuffmanTree(){
-	return &huffman_;
+	return &huffmanPmt_;
 }
 
 void next::RawDataInput::countEvents(std::FILE* file, int * nevents, int * firstEvt){
@@ -921,13 +924,13 @@ void next::RawDataInput::ReadIndiaJuliettPmt(int16_t * buffer, unsigned int size
 	int FWVersion = eventReader_->FWVersion();
 
 	if (ZeroSuppression){
-		if ((!huffman_.next[0]) && (!huffman_.next[1])){
+		if ((!huffmanPmt_.next[0]) && (!huffmanPmt_.next[1])){
 			auto myheader = (*headOut_).rbegin();
 			run_ = myheader->RunNb();
-			getHuffmanFromDB(config_, &huffman_, run_);
+			getHuffmanFromDB(config_, &huffmanPmt_, run_, HuffmannSensor::pmt);
 			if( verbosity_ >= 1 ){
 				_log->debug("Huffman tree:\n");
-				print_huffman(_log, &huffman_, 1);
+				print_huffman(_log, &huffmanPmt_, 1);
 			}
 		}
 	}
@@ -985,7 +988,7 @@ void next::RawDataInput::ReadIndiaJuliettPmt(int16_t * buffer, unsigned int size
 			if (time == BufferSamples){
 				break;
 			}
-			decodeChargeIndiaPmtCompressed(buffer, &current_bit, *pmtDgts_, &huffman_, fec_chmask[fFecId], pmtPosition, time);
+			decodeChargeIndiaPmtCompressed(buffer, &current_bit, *pmtDgts_, &huffmanPmt_, fec_chmask[fFecId], pmtPosition, time);
 		}else{
 			int FT = *buffer & 0x0FFFF;
 			buffer++;
@@ -1172,6 +1175,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 	int ErrorBit = eventReader_->GetErrorBit();
 	int FecId = eventReader_->FecId();
 	int ZeroSuppression = eventReader_->ZeroSuppression();
+	int CompressedData  = eventReader_->CompressedData();
 	unsigned int numberOfFEB = eventReader_->NumberOfChannels();
 	int BufferSamples = eventReader_->BufferSamples();
 	if (eventReader_->FWVersion() == 10){
@@ -1180,9 +1184,23 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 		}
 	}
 
+	//Map elec_id -> last_value
+	std::map<int, int> last_values;
+
+	// Load Huffman table if data is compressed
+	if (CompressedData){
+		if ((!huffmanSipm_.next[0]) && (!huffmanSipm_.next[1])){
+			auto myheader = (*headOut_).rbegin();
+			run_ = myheader->RunNb();
+			getHuffmanFromDB(config_, &huffmanSipm_, run_, HuffmannSensor::sipm);
+			if( verbosity_ >= 1 ){
+				_log->debug("Huffman tree:\n");
+				print_huffman(_log, &huffmanSipm_, 1);
+			}
+		}
+	}
+
 	int ChannelMask = eventReader_->ChannelMask();
-//	std::cout << "fec: " << FecId << "\tsipm channel mask: " << ChannelMask << std::endl;
-//	std::cout << "febs: " << numberOfFEB << std::endl;
 
 	//Check if digits & waveforms has been created
 	if(sipmDgts_->size() == 0){
@@ -1310,9 +1328,19 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 					setActiveSensors(&(feb_chmask[FEBId]), &*sipmDgts_, sipmPosition);
 				}
 				if(ZeroSuppression){
-					decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, timeinmus);
+					if(CompressedData){
+						int current_bit = 31;
+						decodeChargeIndiaPmtCompressed(payload_ptr, &current_bit, *sipmDgts_, &huffmanSipm_, feb_chmask[FEBId], sipmPosition, timeinmus);
+					}else{
+						decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, timeinmus);
+					}
 				}else{
-					decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
+					if(CompressedData){
+						int current_bit = 31;
+						decodeChargeIndiaPmtCompressed(payload_ptr, &current_bit, *sipmDgts_, &huffmanSipm_, feb_chmask[FEBId], sipmPosition, time);
+					}else{
+						decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
+					}
 				}
 				//TODO check this time (originally was time for RAW and timeinmus for ZS)
 				//decodeSipmCharge(payload_ptr, channelMaskVec, TotalNumberOfSiPMs, FEBId, timeinmus);

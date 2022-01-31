@@ -10,10 +10,11 @@ void finish_with_error(MYSQL *con, std::shared_ptr<spdlog::logger> log)
   exit(1);
 }
 
-void getHuffmanFromDB(ReadConfig * config, Huffman * huffman, int run_number){
+void getHuffmanFromDB(ReadConfig * config, Huffman * huffman, int run_number, HuffmannSensor sensor){
 	MYSQL *con = mysql_init(NULL);
-	std::shared_ptr<spdlog::logger> log = spd::stdout_color_mt("db");
-	std::shared_ptr<spdlog::logger> logerr = spd::stderr_color_mt("huffman");
+	// This declaration avoid errors when creating the same instance more than once
+	static auto log    = spd::stdout_color_mt("db");
+	static auto logerr = spd::stderr_color_mt("huffman");
 
 	if (con == NULL){
 		logerr->error("mysql_init() failed");
@@ -25,7 +26,19 @@ void getHuffmanFromDB(ReadConfig * config, Huffman * huffman, int run_number){
 		finish_with_error(con, logerr);
 	}
 
-	std::string sql = "SELECT value, code from HuffmanCodes WHERE MinRun <= RUN and MaxRun >= RUN";
+	std::string sql;
+	std::string sensor_type;
+	switch(sensor)
+	{
+		case HuffmannSensor::sipm :
+			sql = "SELECT value, code from HuffmanCodesSipm WHERE MinRun <= RUN and MaxRun >= RUN";
+			sensor_type = "SiPM";
+			break;
+		case HuffmannSensor::pmt :
+			sql = "SELECT value, code from HuffmanCodesPmt WHERE MinRun <= RUN and MaxRun >= RUN";
+			sensor_type = "PMT";
+			break;
+	}
 
 	size_t start_pos = sql.find("RUN");
 	while(start_pos != std::string::npos){
@@ -42,8 +55,8 @@ void getHuffmanFromDB(ReadConfig * config, Huffman * huffman, int run_number){
 		finish_with_error(con, logerr);
 	}
 
-	log->info("Huffman codes read from {} in {}", config->dbname(),
-			config->host());
+	log->info("{} Huffman codes read from {} in {}", sensor_type,
+		   	config->dbname(), config->host());
 
 	MYSQL_ROW row;
 
