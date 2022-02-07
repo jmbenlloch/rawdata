@@ -450,7 +450,7 @@ bool next::RawDataInput::ReadDATEEvent()
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a PMT FEC");
 				}
-				ReadIndiaJuliettPmt(payload_flip,size);
+//				ReadIndiaJuliettPmt(payload_flip,size);
 				fwVersionPmt = fwVersion;
 			}else if (FECtype==2){
 				if( verbosity_ >= 1 ){
@@ -988,7 +988,7 @@ void next::RawDataInput::ReadIndiaJuliettPmt(int16_t * buffer, unsigned int size
 			if (time == BufferSamples){
 				break;
 			}
-			decodeChargeIndiaPmtCompressed(buffer, &current_bit, *pmtDgts_, &huffmanPmt_, fec_chmask[fFecId], pmtPosition, time);
+			decodeChargeIndiaCompressed(buffer, &current_bit, *pmtDgts_, &huffmanPmt_, fec_chmask[fFecId], pmtPosition, time);
 		}else{
 			int FT = *buffer & 0x0FFFF;
 			buffer++;
@@ -1257,6 +1257,10 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 		int16_t *mem_to_free = payload_ptr;
 		buildSipmData(size, payload_ptr, payloadsipm_ptrA, payloadsipm_ptrB);
 
+		for (int i=0; i<300; i++){
+			printf("[%d]: 0x%04x\n", i, payload_ptr[i]);
+		}
+
 		//read data
 		int time = -1;
 		//std::vector<int> channelMaskVec;
@@ -1279,7 +1283,23 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 					break;
 				}
 
+
+				for (int i=0; i<300; i++){
+					printf("%d-[%d]: 0x%04x\n", j, i, payload_ptr[i]);
+				}
+
+
 				int FEBId = ((*payload_ptr) & 0x0FC00) >> 10;
+				int febInfo = (*payload_ptr) & 0x03FF;
+				int empty_feb = (febInfo & 0x0002) >> 1;
+				printf("febInfo: 0x%04x, empty: %d\n", febInfo, empty_feb);
+
+				// If there is no data, stop processing this FEB
+				if (empty_feb){
+					payload_ptr++;
+					continue;
+				}
+
 				payload_ptr++;
 				if(verbosity_ >= 3){
 					_log->debug("Feb ID is 0x{:04x}", FEBId);
@@ -1327,17 +1347,21 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 					sipmChannelMask(payload_ptr, feb_chmask[FEBId], FEBId);
 					setActiveSensors(&(feb_chmask[FEBId]), &*sipmDgts_, sipmPosition);
 				}
+
+				int offset = 0;
 				if(ZeroSuppression){
 					if(CompressedData){
 						int current_bit = 31;
-						decodeChargeIndiaPmtCompressed(payload_ptr, &current_bit, *sipmDgts_, &huffmanSipm_, feb_chmask[FEBId], sipmPosition, timeinmus);
+						offset = decodeChargeIndiaCompressed(payload_ptr, &current_bit, *sipmDgts_, &huffmanSipm_, feb_chmask[FEBId], sipmPosition, timeinmus);
+						payload_ptr += offset;
 					}else{
 						decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, timeinmus);
 					}
 				}else{
 					if(CompressedData){
 						int current_bit = 31;
-						decodeChargeIndiaPmtCompressed(payload_ptr, &current_bit, *sipmDgts_, &huffmanSipm_, feb_chmask[FEBId], sipmPosition, time);
+						offset = decodeChargeIndiaCompressed(payload_ptr, &current_bit, *sipmDgts_, &huffmanSipm_, feb_chmask[FEBId], sipmPosition, time);
+						payload_ptr += offset;
 					}else{
 						decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
 					}
@@ -1352,7 +1376,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 
 void setActiveSensors(std::vector<int> * channelMaskVec, next::DigitCollection * pmts, int * positions){
 	for(unsigned int i=0; i < channelMaskVec->size(); i++){
-//		std::cout << "mask: " << (*channelMaskVec)[i] << std::endl;
+		std::cout << "mask: " << (*channelMaskVec)[i] << std::endl;
 		auto dgt = pmts->begin() + positions[(*channelMaskVec)[i]];
 		dgt->setActive(true);
 	}
@@ -1395,6 +1419,7 @@ int next::RawDataInput::sipmChannelMask(int16_t * &ptr, std::vector<int> &channe
 
 			ElecID = (febId+1)*1000 + l*16 - t - 1;
 			sipmNumber = SipmIDtoPosition(ElecID);
+			printf("feb: %d, elecid: %d, sipm: %d\n", febId, ElecID, sipmNumber);
 
 			if(bit>0){
 				channelMaskVec.push_back(sipmNumber);
@@ -1460,18 +1485,23 @@ void buildSipmData(unsigned int size, int16_t * ptr, int16_t * ptrA, int16_t * p
 	}
 }
 
-void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
+int next::RawDataInput::decodeChargeIndiaCompressed(int16_t* &ptr,
 	   	int * current_bit, next::DigitCollection &digits, Huffman * huffman,
 	   	std::vector<int> &channelMaskVec, int* positions, int time){
 	int data = 0;
+	// Use in SiPM after decoding, to leave the ptr in the starting position of the next FEB
+	int words_to_add = 0;
 
 	for(int chan=0; chan<channelMaskVec.size(); chan++){
 		// It is important to keep datatypes, memory allocation changes with them
 		int16_t * charge_ptr = (int16_t *) &data;
 
+		printf("current_bit: %d, ptr[0x%x]: 0x%04x\n", *current_bit, ptr, *ptr);
+
 		if(*current_bit < 16){
 			ptr++;
 			*current_bit += 16;
+			printf("ptr incremented[%x]: 0x%04x, current_bit: %d\n", ptr, *ptr);
 		}
 
 		memcpy(charge_ptr+1, ptr  , 2);
@@ -1489,6 +1519,7 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 
 //		printf("word: 0x%04x\t, ElecID is %d\t Time is %d\t", data, channelMaskVec[chan], time);
 		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
+		printf("\tcurrent_bit after: %d\n", *current_bit);
 
 		if(verbosity_ >= 4){
 			 _log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, wfvalue);
@@ -1497,6 +1528,13 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 		//Save data in Digits
 		dgt->waveform()[time] = wfvalue;
 	}
+
+	if (*current_bit < 16){
+		words_to_add += 2; // We are in the second word
+	}else{
+		words_to_add++; // We are in the first word
+	}
+	return words_to_add;
 }
 
 void next::RawDataInput::decodeCharge(int16_t* &ptr, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int* positions, int time){
