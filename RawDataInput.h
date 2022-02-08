@@ -75,7 +75,8 @@ public:
   void decodeCharge(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int time);
   void decodeChargeHotelPmtZS(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
   void decodeChargeIndiaPmtZS(int16_t* &buffer, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
-  int decodeChargeIndiaCompressed(int16_t* &buffer, int *current_bit, next::DigitCollection &digits, Huffman * huffman, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
+  void decodeChargeIndiaPmtCompressed(int16_t* &buffer, int *current_bit, next::DigitCollection &digits, Huffman * huffman, std::vector<int> &channelMaskVec, int *positions, int timeinmus);
+  void decodeChargeIndiaSipmCompressed(int16_t* &buffer, int *current_bit, next::DigitCollection &digits, Huffman * huffman, std::vector<int> &channelMaskVec, int *positions, int* last_values, int timeinmus);
   int computeSipmTime(int16_t * &ptr, next::EventReader * reader);
   int sipmChannelMask(int16_t * &ptr, std::vector<int> &channelMaskVec, int febId);
   int pmtsChannelMask(int16_t chmask, std::vector<int> &channelMaskVec, int fecId, int FWVersion);
@@ -119,6 +120,7 @@ private:
   int16_t * payloadSipmPtr[NUM_FEC_SIPM]; //Store pointers to the payload
   //To aid search of SiPM digits
   int sipmPosition[NSIPMS]; //Num FEBs * 64
+  int sipmLastValues[NSIPMS]; //For Sipm with ZS+Compression
   int pmtPosition[NPMTS];
 
   //Relation between real channels & BLR ones

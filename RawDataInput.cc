@@ -263,6 +263,7 @@ bool next::RawDataInput::ReadDATEEvent()
 
 	//Num FEB
 	std::fill(sipmPosition, sipmPosition+NSIPMS,-1);
+	std::fill(sipmLastValues, sipmLastValues+NSIPMS,0);
 	std::fill(pmtPosition, pmtPosition+NPMTS,-1);
 
 	// Reset the output pointers.
@@ -988,7 +989,7 @@ void next::RawDataInput::ReadIndiaJuliettPmt(int16_t * buffer, unsigned int size
 			if (time == BufferSamples){
 				break;
 			}
-			decodeChargeIndiaCompressed(buffer, &current_bit, *pmtDgts_, &huffmanPmt_, fec_chmask[fFecId], pmtPosition, time);
+			decodeChargeIndiaPmtCompressed(buffer, &current_bit, *pmtDgts_, &huffmanPmt_, fec_chmask[fFecId], pmtPosition, time);
 		}else{
 			int FT = *buffer & 0x0FFFF;
 			buffer++;
@@ -1352,16 +1353,14 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 				if(ZeroSuppression){
 					if(CompressedData){
 						int current_bit = 31;
-						offset = decodeChargeIndiaCompressed(payload_ptr, &current_bit, *sipmDgts_, &huffmanSipm_, feb_chmask[FEBId], sipmPosition, timeinmus);
-						payload_ptr += offset;
+						decodeChargeIndiaSipmCompressed(payload_ptr, &current_bit, *sipmDgts_, &huffmanSipm_, feb_chmask[FEBId], sipmPosition, sipmLastValues, timeinmus);
 					}else{
 						decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, timeinmus);
 					}
 				}else{
 					if(CompressedData){
 						int current_bit = 31;
-						offset = decodeChargeIndiaCompressed(payload_ptr, &current_bit, *sipmDgts_, &huffmanSipm_, feb_chmask[FEBId], sipmPosition, time);
-						payload_ptr += offset;
+						decodeChargeIndiaSipmCompressed(payload_ptr, &current_bit, *sipmDgts_, &huffmanSipm_, feb_chmask[FEBId], sipmPosition, sipmLastValues, time);
 					}else{
 						decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
 					}
@@ -1485,9 +1484,9 @@ void buildSipmData(unsigned int size, int16_t * ptr, int16_t * ptrA, int16_t * p
 	}
 }
 
-int next::RawDataInput::decodeChargeIndiaCompressed(int16_t* &ptr,
+void next::RawDataInput::decodeChargeIndiaSipmCompressed(int16_t* &ptr,
 	   	int * current_bit, next::DigitCollection &digits, Huffman * huffman,
-	   	std::vector<int> &channelMaskVec, int* positions, int time){
+	   	std::vector<int> &channelMaskVec, int* positions, int* last_values, int time){
 	int data = 0;
 	// Use in SiPM after decoding, to leave the ptr in the starting position of the next FEB
 	int words_to_add = 0;
@@ -1508,17 +1507,20 @@ int next::RawDataInput::decodeChargeIndiaCompressed(int16_t* &ptr,
 		memcpy(charge_ptr  , ptr+1, 2);
 
 //		printf("charge_ptr: 0x%04x\n", data);
+		printf("channel: %d, position: %d\n", channelMaskVec[chan], positions[channelMaskVec[chan]]);
 
 		// Get previous value
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
 		int previous = 0;
 		if (time){
-			previous = dgt->waveform()[time-1];
+//			previous = dgt->waveform()[time-1];
+			previous = last_values[channelMaskVec[chan]];
 		}
 
 
 //		printf("word: 0x%04x\t, ElecID is %d\t Time is %d\t", data, channelMaskVec[chan], time);
 		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
+		last_values[channelMaskVec[chan]] = wfvalue;
 		printf("\tcurrent_bit after: %d\n", *current_bit);
 
 		if(verbosity_ >= 4){
@@ -1530,11 +1532,51 @@ int next::RawDataInput::decodeChargeIndiaCompressed(int16_t* &ptr,
 	}
 
 	if (*current_bit < 16){
-		words_to_add += 2; // We are in the second word
+		ptr += 2; // We are in the second word
 	}else{
-		words_to_add++; // We are in the first word
+		ptr++; // We are in the first word
 	}
-	return words_to_add;
+}
+
+
+
+void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
+	   	int * current_bit, next::DigitCollection &digits, Huffman * huffman,
+	   	std::vector<int> &channelMaskVec, int* positions, int time){
+	int data = 0;
+
+	for(int chan=0; chan<channelMaskVec.size(); chan++){
+		// It is important to keep datatypes, memory allocation changes with them
+		int16_t * charge_ptr = (int16_t *) &data;
+
+		printf("current_bit: %d, ptr[0x%x]: 0x%04x\n", *current_bit, ptr, *ptr);
+
+		if(*current_bit < 16){
+			ptr++;
+			*current_bit += 16;
+			printf("ptr incremented[%x]: 0x%04x, current_bit: %d\n", ptr, *ptr);
+		}
+
+		memcpy(charge_ptr+1, ptr  , 2);
+		memcpy(charge_ptr  , ptr+1, 2);
+
+		// Get previous value
+		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
+		int previous = 0;
+		if (time){
+			previous = dgt->waveform()[time-1];
+		}
+
+		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
+		printf("\tcurrent_bit after: %d\n", *current_bit);
+
+		if(verbosity_ >= 4){
+			 _log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, wfvalue);
+		}
+
+		//Save data in Digits
+		dgt->waveform()[time] = wfvalue;
+	}
 }
 
 void next::RawDataInput::decodeCharge(int16_t* &ptr, next::DigitCollection &digits, std::vector<int> &channelMaskVec, int* positions, int time){
