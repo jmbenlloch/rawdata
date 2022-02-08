@@ -1258,10 +1258,6 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 		int16_t *mem_to_free = payload_ptr;
 		buildSipmData(size, payload_ptr, payloadsipm_ptrA, payloadsipm_ptrB);
 
-		for (int i=0; i<300; i++){
-			printf("[%d]: 0x%04x\n", i, payload_ptr[i]);
-		}
-
 		//read data
 		int time = -1;
 		//std::vector<int> channelMaskVec;
@@ -1284,16 +1280,9 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 					break;
 				}
 
-
-				for (int i=0; i<300; i++){
-					printf("%d-[%d]: 0x%04x\n", j, i, payload_ptr[i]);
-				}
-
-
 				int FEBId = ((*payload_ptr) & 0x0FC00) >> 10;
 				int febInfo = (*payload_ptr) & 0x03FF;
 				int empty_feb = (febInfo & 0x0002) >> 1;
-				printf("febInfo: 0x%04x, empty: %d\n", febInfo, empty_feb);
 
 				// If there is no data, stop processing this FEB
 				if (empty_feb){
@@ -1322,15 +1311,11 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 						}else{
 							nextFT = previousFT;
 						}
-//						printf("pFT: 0x%04x, FT: 0x%04x, condition: %d\n", previousFT, FT, nextFT == FT);
 						if(nextFT != FT){
 							auto myheader = (*headOut_).rbegin();
 							_logerr->error("SiPM Error! Event {}, FECs ({:x}, {:x}), expected FT was {:x}, current FT is {:x}, time {}", myheader->NbInRun(), channelA, channelB, nextFT, FT, time);
 							fileError_ = true;
 							eventError_ = true;
-							//for(int i=-20; i<20; i++){
-							//	printf("data[%d]: 0x%04x\n", i, *(payload_ptr+i));
-							//}
 							if(discard_){
 								return;
 							}
@@ -1365,8 +1350,6 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 						decodeCharge(payload_ptr, *sipmDgts_, feb_chmask[FEBId], sipmPosition, time);
 					}
 				}
-				//TODO check this time (originally was time for RAW and timeinmus for ZS)
-				//decodeSipmCharge(payload_ptr, channelMaskVec, TotalNumberOfSiPMs, FEBId, timeinmus);
 			}
 		}
 		free(mem_to_free);
@@ -1375,7 +1358,6 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 
 void setActiveSensors(std::vector<int> * channelMaskVec, next::DigitCollection * pmts, int * positions){
 	for(unsigned int i=0; i < channelMaskVec->size(); i++){
-		std::cout << "mask: " << (*channelMaskVec)[i] << std::endl;
 		auto dgt = pmts->begin() + positions[(*channelMaskVec)[i]];
 		dgt->setActive(true);
 	}
@@ -1418,7 +1400,6 @@ int next::RawDataInput::sipmChannelMask(int16_t * &ptr, std::vector<int> &channe
 
 			ElecID = (febId+1)*1000 + l*16 - t - 1;
 			sipmNumber = SipmIDtoPosition(ElecID);
-			printf("feb: %d, elecid: %d, sipm: %d\n", febId, ElecID, sipmNumber);
 
 			if(bit>0){
 				channelMaskVec.push_back(sipmNumber);
@@ -1495,33 +1476,24 @@ void next::RawDataInput::decodeChargeIndiaSipmCompressed(int16_t* &ptr,
 		// It is important to keep datatypes, memory allocation changes with them
 		int16_t * charge_ptr = (int16_t *) &data;
 
-		printf("current_bit: %d, ptr[0x%x]: 0x%04x\n", *current_bit, ptr, *ptr);
-
 		if(*current_bit < 16){
 			ptr++;
 			*current_bit += 16;
-			printf("ptr incremented[%x]: 0x%04x, current_bit: %d\n", ptr, *ptr);
 		}
 
 		memcpy(charge_ptr+1, ptr  , 2);
 		memcpy(charge_ptr  , ptr+1, 2);
 
-//		printf("charge_ptr: 0x%04x\n", data);
-		printf("channel: %d, position: %d\n", channelMaskVec[chan], positions[channelMaskVec[chan]]);
-
 		// Get previous value
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
 		int previous = 0;
 		if (time){
-//			previous = dgt->waveform()[time-1];
 			previous = last_values[channelMaskVec[chan]];
 		}
 
 
-//		printf("word: 0x%04x\t, ElecID is %d\t Time is %d\t", data, channelMaskVec[chan], time);
 		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
 		last_values[channelMaskVec[chan]] = wfvalue;
-		printf("\tcurrent_bit after: %d\n", *current_bit);
 
 		if(verbosity_ >= 4){
 			 _log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, wfvalue);
@@ -1549,12 +1521,9 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 		// It is important to keep datatypes, memory allocation changes with them
 		int16_t * charge_ptr = (int16_t *) &data;
 
-		printf("current_bit: %d, ptr[0x%x]: 0x%04x\n", *current_bit, ptr, *ptr);
-
 		if(*current_bit < 16){
 			ptr++;
 			*current_bit += 16;
-			printf("ptr incremented[%x]: 0x%04x, current_bit: %d\n", ptr, *ptr);
 		}
 
 		memcpy(charge_ptr+1, ptr  , 2);
@@ -1568,7 +1537,6 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 		}
 
 		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
-		printf("\tcurrent_bit after: %d\n", *current_bit);
 
 		if(verbosity_ >= 4){
 			 _log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, wfvalue);
