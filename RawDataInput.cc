@@ -1487,10 +1487,7 @@ void next::RawDataInput::decodeChargeIndiaSipmCompressed(int16_t* &ptr,
 		// Get previous value
 		auto dgt = digits.begin() + positions[channelMaskVec[chan]];
 		int previous = 0;
-		if (time){
-			previous = last_values[channelMaskVec[chan]];
-		}
-
+		previous = last_values[channelMaskVec[chan]];
 
 		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
 		last_values[channelMaskVec[chan]] = wfvalue;
