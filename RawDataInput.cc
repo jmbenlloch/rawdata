@@ -451,7 +451,7 @@ bool next::RawDataInput::ReadDATEEvent()
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a PMT FEC");
 				}
-//				ReadIndiaJuliettPmt(payload_flip,size);
+				ReadIndiaJuliettPmt(payload_flip,size);
 				fwVersionPmt = fwVersion;
 			}else if (FECtype==2){
 				if( verbosity_ >= 1 ){
