@@ -27,7 +27,7 @@ void ReadConfig::parse(){
 
 	std::ifstream ifs(_filename.c_str());
     _reader.parse(ifs, _obj);
-	_maxevents  = _obj.get("max_events", 100000).asInt();
+	_maxevents  = _obj.get("max_events", 1000000000).asInt();
 	_verbosity  = _obj.get("verbosity", 0).asInt();
 	_extTrigger = _obj.get("ext_trigger", 15).asInt();
 	_twofiles   = _obj.get("two_files", false).asBool();
