@@ -347,7 +347,7 @@ void next::HDF5Writer::sortPmts(std::vector<next::Digit*> &sorted_sensors,
 
 	// Create vector for sensor ids of channels received
 	std::vector<int> sensor_ids;
-	for(unsigned int i=0; i<12; i++){ // FIX: Next-White's PMT number
+	for(unsigned int i=0; i<84; i++){ // TODO FIX: NEXT-100 number of sensors
 		//sensor_ids.emplace_back(_sensors.elecToSensor(sensors[i].chID()));
 		sensor_ids.emplace_back(i);
 	}
