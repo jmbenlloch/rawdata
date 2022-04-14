@@ -64,25 +64,25 @@ void print_huffman(std::shared_ptr<spdlog::logger> log, Huffman * huffman, int c
 }
 
 // start_bit will be modified to set the new position
-int decode_compressed_value(int previous_value, int data, int * start_bit, Huffman * huffman){
+int decode_compressed_value(int previous_value, int data, int control_code, int * start_bit, Huffman * huffman){
 	// Check data type (0 uncompressed, 1 huffman)
 	int current_bit = *start_bit;
-	int type = CheckBit(data, current_bit);
-	current_bit -= 1;
 
 	int wfvalue;
-	if(type == 0){
+
+	// printf("call decode_huffman: data 0x%08x, current_bit: %d\n", data, current_bit);
+	current_bit = decode_huffman(huffman, data, current_bit, &wfvalue);
+	// printf("value: 0x%04x\n", wfvalue);
+
+	if(wfvalue == control_code){
 		wfvalue = (data >> (current_bit - 11)) & 0x0FFF;
 		current_bit -= 12;
-		// printf("wfvalue: %d\n", wfvalue);
+		// printf("12-bit wfvalue: %d\n", wfvalue);
 	}else{
-		// printf("call decode_huffman\n");
-		current_bit = decode_huffman(huffman, data, current_bit, &wfvalue);
 		wfvalue = previous_value + wfvalue;
 	}
 	*start_bit = current_bit;
-
-	// printf("type: %d, value: 0x%04x\n", type, wfvalue);
+	// printf("curren bit: %d\n", current_bit);
 
 	return wfvalue;
 }

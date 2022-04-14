@@ -26,6 +26,6 @@ struct Huffman {
 void print_huffman(std::shared_ptr<spdlog::logger> log, Huffman * huffman, int code);
 void printf_huffman(Huffman * huffman, int code);
 int parse_huffman_line(int value, char * code, Huffman * huffman);
-int decode_compressed_value(int previous_value, int data, int * start_bit, Huffman * huffman);
+int decode_compressed_value(int previous_value, int data, int control_code, int * start_bit, Huffman * huffman);
 short int decode_huffman(Huffman * huffman, int code, int position, int * result);
 

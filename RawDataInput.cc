@@ -1274,6 +1274,11 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 		while (!endOfData){
 			time = time + 1;
 			for(unsigned int j=0; j<numberOfFEB; j++){
+
+				// for(int count=0; count<30; count++){
+				//     printf("[%d] 0x%04x\n", count, payload_ptr[count]);
+				// }
+
 				//Stop condition for while and for
 				if(*payload_ptr == 0xFFFFFFFF){
 					endOfData = true;
@@ -1489,7 +1494,8 @@ void next::RawDataInput::decodeChargeIndiaSipmCompressed(int16_t* &ptr,
 		int previous = 0;
 		previous = last_values[channelMaskVec[chan]];
 
-		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
+		int control_code = 123456;
+		int wfvalue = decode_compressed_value(previous, data, control_code, current_bit, huffman);
 		last_values[channelMaskVec[chan]] = wfvalue;
 
 		if(verbosity_ >= 4){
@@ -1500,8 +1506,8 @@ void next::RawDataInput::decodeChargeIndiaSipmCompressed(int16_t* &ptr,
 		dgt->waveform()[time] = wfvalue;
 	}
 
-	if (*current_bit < 16){
-		ptr += 2; // We are in the second word
+	if (*current_bit < 15){
+		ptr += 2; // We have consumed part of the second word
 	}else{
 		ptr++; // We are in the first word
 	}
@@ -1533,7 +1539,8 @@ void next::RawDataInput::decodeChargeIndiaPmtCompressed(int16_t* &ptr,
 			previous = dgt->waveform()[time-1];
 		}
 
-		int wfvalue = decode_compressed_value(previous, data, current_bit, huffman);
+		int control_code = 123456;
+		int wfvalue = decode_compressed_value(previous, data, control_code, current_bit, huffman);
 
 		if(verbosity_ >= 4){
 			 _log->debug("ElecID is {}\t Time is {}\t Charge is 0x{:04x}", channelMaskVec[chan], time, wfvalue);
