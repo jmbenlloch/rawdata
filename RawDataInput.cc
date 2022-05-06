@@ -1438,6 +1438,12 @@ int next::RawDataInput::computeSipmTime(int16_t * &ptr, next::EventReader * read
 
 	if(ZeroSuppression){
 		int startPosition = ((FTBit<<16)+TriggerFT - PreTrgSamples + BufferSamples)/40 % int(BufferSamples*CLOCK_TICK_);
+
+		// Due to FPGA implementation. To be removed in the future
+		if (((FTBit<<16)+TriggerFT) < PreTrgSamples){
+			startPosition -= 1;
+		}
+
 		FT = FT - startPosition;
 		if(FT < 0){
 			FT += BufferSamples*CLOCK_TICK_;
