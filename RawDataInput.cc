@@ -1755,7 +1755,7 @@ void CreatePMTs(next::DigitCollection * pmts, int * positions, std::vector<int> 
 
 unsigned int next::RawDataInput::readHeaderSize(std::FILE* fptr) const
 {
-	unsigned char * buf = new unsigned char[4];
+	unsigned char buf[4];
 	eventHeadSizeType size;
 	fseek(fptr, 8, SEEK_CUR);
 	fread(buf, 1, 4, fptr);
