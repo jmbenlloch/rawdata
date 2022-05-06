@@ -11,7 +11,9 @@ void finish_with_error(MYSQL *con, std::shared_ptr<spdlog::logger> log)
 }
 
 void getHuffmanFromDB(ReadConfig * config, Huffman * huffman, int run_number, HuffmannSensor sensor){
-	MYSQL *con = mysql_init(NULL);
+	MYSQL connection;
+	MYSQL * con = &connection;
+	mysql_init(con);
 	// This declaration avoid errors when creating the same instance more than once
 	static auto log    = spd::stdout_color_mt("db");
 	static auto logerr = spd::stderr_color_mt("huffman");
