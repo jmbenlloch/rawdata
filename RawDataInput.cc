@@ -1150,9 +1150,9 @@ void next::RawDataInput::computeNextFThm(int * nextFT, int * nextFThm, next::Eve
 	if (*nextFT == -1){
 		*nextFT = (FTBit << 16) + (TriggerFT & 0x0FFFF);
 		// Decrease one due to implementation in FPGA
-		if (PreTrgSamples > *nextFT){
-			*nextFT -= 1;
-		}
+		// if (PreTrgSamples > *nextFT){
+		//     *nextFT -= 1;
+		// }
 	}else{
 		*nextFT = (*nextFT + 1) % BufferSamples;
 	}
@@ -1440,9 +1440,9 @@ int next::RawDataInput::computeSipmTime(int16_t * &ptr, next::EventReader * read
 		int startPosition = ((FTBit<<16)+TriggerFT - PreTrgSamples + BufferSamples)/40 % int(BufferSamples*CLOCK_TICK_);
 
 		// Due to FPGA implementation. To be removed in the future
-		if (((FTBit<<16)+TriggerFT) < PreTrgSamples){
-			startPosition -= 1;
-		}
+		// if (((FTBit<<16)+TriggerFT) < PreTrgSamples){
+		//     startPosition -= 1;
+		// }
 
 		FT = FT - startPosition;
 		if(FT < 0){
