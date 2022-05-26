@@ -1112,22 +1112,34 @@ int computePmtElecID(int fecid, int channel, int fwversion){
 	}
 
 	if(fwversion >= 10){
-		// fec: 02: 000, 002, 004, 006, 008, 010, 012, 014, 016, 018, 020, 022
-		// fec: 03: 001, 003, 005, 007, 009, 011, 013, 015, 017, 019, 021, 023
-		// fec: 06: 024, 026, 028, 030, 032, 034, 036, 038, 040, 042, 044, 046
-		// fec: 07: 025, 027, 029, 031, 033, 035, 037, 039, 041, 043, 045, 047
-		// fec: 10: 048, 050, 052, 054, 056, 058, 060, 062, 064, 066, 068, 070
-		// fec: 11: 049, 051, 053, 055, 057, 059, 061, 063, 065, 067, 069, 071
-		// fec: 14: 072, 074, 076, 078, 080, 082, 084, 086, 088, 090, 092, 094
-		// fec: 15: 073, 075, 077, 079, 081, 083, 085, 087, 089, 091, 093, 095
-		// fec: 18: 096, 098, 100, 102, 104, 106, 108, 110, 112, 114, 116, 118
-		// fec: 19: 097, 099, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119
-		// fec: 22: 120, 122, 124, 126, 128, 130, 132, 134, 136, 138, 140, 142
-		// fec: 23: 121, 123, 125, 127, 129, 131, 133, 135, 137, 139, 141, 143
-		// fec: 26: 144, 146, 148, 150, 152, 154, 156, 158, 160, 162, 164, 166
-		// fec: 27: 145, 147, 149, 151, 153, 155, 157, 159, 161, 163, 165, 167
+		// fec: 02: 100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 120, 122
+		// fec: 03: 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123
+		// fec: 06: 200, 202, 204, 206, 208, 210, 212, 214, 216, 218, 220, 222
+		// fec: 07: 201, 203, 205, 207, 209, 211, 213, 215, 217, 219, 221, 223
+		// fec: 10: 300, 302, 304, 306, 308, 310, 312, 314, 316, 318, 320, 322
+		// fec: 11: 301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323
+		// fec: 14: 400, 402, 404, 406, 408, 410, 412, 414, 416, 418, 420, 422
+		// fec: 15: 401, 403, 405, 407, 409, 411, 413, 415, 417, 419, 421, 423
+		// fec: 18: 500, 502, 504, 506, 508, 510, 512, 514, 516, 518, 520, 522
+		// fec: 19: 501, 503, 505, 507, 509, 511, 513, 515, 517, 519, 521, 523
+		// fec: 22: 600, 602, 604, 606, 608, 610, 612, 614, 616, 618, 620, 622
+		// fec: 23: 601, 603, 605, 607, 609, 611, 613, 615, 617, 619, 621, 623
+		// fec: 26: 700, 702, 704, 706, 708, 710, 712, 714, 716, 718, 720, 722
+		// fec: 27: 701, 703, 705, 707, 709, 711, 713, 715, 717, 719, 721, 723
+
+		// Test code
+		// int fecs[14] = {2,3,6,7,10,11,14,15,18,19,22,23,26,27};
+		// for(int i=0; i<14; i++){
+		//     for (int j=0; j<12; j++){
+		//         fecid = fecs[i];
+		//         channel = j;
+		//         ElecID = channel * 2 + (fecid % 2);
+		//         ElecID += (((fecid - 2) / 4) + 1) * 100;
+		//         printf("fec: %d\tchannel: %d\t elecid: %d\n", fecid, channel, ElecID);
+		//     }
+		// }
 		ElecID = channel * 2 + (fecid % 2);
-		ElecID += ((fecid - 2) / 4) * 24;
+		ElecID += (((fecid - 2) / 4) + 1) * 100;
 	}
 
 	return ElecID;
@@ -1370,14 +1382,16 @@ void setActiveSensors(std::vector<int> * channelMaskVec, next::DigitCollection *
 
 int next::RawDataInput::pmtsChannelMask(int16_t chmask, std::vector<int> &channelMaskVec, int fecId, int fwversion){
 	int TotalNumberOfPMTs = 0;
-	int ElecID;
+	int ElecID, pmtID;
 
 	channelMaskVec.clear();
 	for (int t=0; t < 16; t++){
 		int bit = CheckBit(chmask, t);
 		if(bit>0){
 			ElecID = computePmtElecID(fecId, t, fwversion);
-			channelMaskVec.push_back(ElecID);
+			pmtID  = PmtIDtoPosition(ElecID);
+			// printf("channelmask: elecid: %d\tpmtid: %d\n", ElecID, pmtID);
+			channelMaskVec.push_back(pmtID);
 			TotalNumberOfPMTs++;
 		}
 	}
@@ -1742,10 +1756,12 @@ void createWaveforms(next::DigitCollection * sensors, int bufferSamples){
 void CreatePMTs(next::DigitCollection * pmts, int * positions, std::vector<int> * elecIDs, int bufferSamples, bool zs){
 	///Creating one class Digit per each MT
 	for (unsigned int i=0; i < elecIDs->size(); i++){
+		int elecID = PositiontoPmtID((*elecIDs)[i]);
+		// printf("elecID: %d, position: %d\n", elecID, (*elecIDs)[i]);
 		if (zs){
-			pmts->emplace_back((*elecIDs)[i], next::digitType::RAWZERO, next::chanType::PMT);
+			pmts->emplace_back(elecID, next::digitType::RAWZERO, next::chanType::PMT);
 		}else{
-			pmts->emplace_back((*elecIDs)[i], next::digitType::RAW,     next::chanType::PMT);
+			pmts->emplace_back(elecID, next::digitType::RAW,     next::chanType::PMT);
 		}
 		positions[(*elecIDs)[i]] = pmts->size() - 1;
 		next::Digit * dgt = &(pmts->back());
@@ -1848,35 +1864,35 @@ void next::RawDataInput::writeEvent(){
 		if(fwVersionPmt >= 10){
 			int chid = (*erIt).chID();
 			if ((*erIt).active()){
-				//  0 -  11 ->   0 - 11 Real
-				// 12 -  23 ->   0 - 11 Dual
-				// 24 -  35 ->  12 - 23 Real
-				// 36 -  47 ->  12 - 23 Dual
-				// 48 -  59 ->  24 - 35 Real
-				// 60 -  71 ->  24 - 35 Dual
-				// 72 -  83 ->  36 - 47 Real
-				// 84 -  95 ->  36 - 47 Dual
-				// 96 - 107 ->  48 - 59 Real
-				//108 - 119 ->  48 - 59 Dual
-				//120 - 131 ->  60 - 71 Real
-				//132 - 143 ->  60 - 71 Dual
-				//144 - 155 ->  72 - 83 Real
-				//156 - 167 ->  72 - 83 Dual
+				// 100 - 111 -> 100 - 111 Real
+				// 112 - 123 -> 100 - 111 Dual
+				// 200 - 211 -> 200 - 211 Real
+				// 212 - 223 -> 200 - 211 Dual
+				// 300 - 311 -> 300 - 311 Real
+				// 312 - 323 -> 300 - 311 Dual
+				// 400 - 411 -> 400 - 411 Real
+				// 412 - 423 -> 400 - 411 Dual
+				// 500 - 511 -> 500 - 511 Real
+				// 512 - 523 -> 500 - 511 Dual
+				// 600 - 611 -> 600 - 611 Real
+				// 612 - 623 -> 600 - 611 Dual
+				// 700 - 711 -> 700 - 711 Real
+				// 712 - 723 -> 700 - 711 Dual
 
 				// Test code
-   /*              for (int j=0; j<168; j++){ */
-					// chid = j;
-					// int newid = chid - (int(chid / 12) % 2) * 12;
-					// newid = newid - int(newid / 12) / 2 * 12;
-					// printf("2-test-oldid: %d\t newid: %d\n", chid, newid);
-			/*     } */
-				int newid = chid - (int(chid / 12) % 2) * 12;
-				newid = newid - int(newid / 12) / 2 * 12;
+				// for (int fec=1; fec<8; fec++){
+				//     for (int ch=0; ch<24; ch++){
+				//         chid = fec*100 + ch;
+				//         int newid = chid - (int((chid % 100) / 12) % 2) * 12;
+				//         printf("test-oldid: %d\t newid: %d\n", chid, newid);
+				//     }
+				// }
+				int newid = chid - (int((chid % 100) / 12) % 2) * 12;
 				(*erIt).setChID(newid);
-				if ((chid / 12) % 2 == 0){
-					pmts.push_back(*erIt);
+				if (((chid % 100) / 12) % 2 == 0){
+				     pmts.push_back(*erIt);
 				}else{
-					blrs.push_back(*erIt);
+				     blrs.push_back(*erIt);
 				}
 			}
 			++erIt;

@@ -44,5 +44,7 @@ namespace next{
 
 int SipmIDtoPosition(int id);
 int PositiontoSipmID(int pos);
+int PmtIDtoPosition(int id);
+int PositiontoPmtID(int pos);
 
 #endif

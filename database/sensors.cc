@@ -77,3 +77,13 @@ int PositiontoSipmID(int pos){
 	int sipmid = (pos/64+1)*1000 + pos%64;
 	return sipmid;
 }
+
+int PmtIDtoPosition(int id){
+	int position = ((id/100)-1)*24 + id % 100;
+	return position;
+}
+
+int PositiontoPmtID(int pos){
+	int sipmid = (pos/24+1) * 100 + pos % 24;
+	return sipmid;
+}
