@@ -116,8 +116,7 @@ void getSensorsFromDB(ReadConfig * config, next::Sensors &sensors, int run_numbe
 
 	int elecid, sensorid;
 	//This id separates between pmts and sipms elecIDs
-	// Sipms starts at 1000, external pmt is 99
-	int threshold = 90;
+	int threshold = 999;
 	int npmts  = 0;
 	int nsipms = 0;
 	while ((row = mysql_fetch_row(result))){

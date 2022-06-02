@@ -347,9 +347,8 @@ void next::HDF5Writer::sortPmts(std::vector<next::Digit*> &sorted_sensors,
 
 	// Create vector for sensor ids of channels received
 	std::vector<int> sensor_ids;
-	for(unsigned int i=0; i<84; i++){ // TODO FIX: NEXT-100 number of sensors
-		//sensor_ids.emplace_back(_sensors.elecToSensor(sensors[i].chID()));
-		sensor_ids.emplace_back(i);
+	for(unsigned int i=0; i<sensors.size(); i++){
+		sensor_ids.emplace_back(_sensors.elecToSensor(sensors[i].chID()));
 	}
 	// Sort them and create a map to get the position for each one
 	std::sort(sensor_ids.begin(), sensor_ids.end());
