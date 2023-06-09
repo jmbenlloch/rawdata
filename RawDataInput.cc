@@ -1287,9 +1287,9 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 			time = time + 1;
 			for(unsigned int j=0; j<numberOfFEB; j++){
 
-				// for(int count=0; count<30; count++){
-				//     printf("[%d] 0x%04x\n", count, payload_ptr[count]);
-				// }
+				for(int count=0; count<100; count++){
+					printf("[%d] 0x%04x\n", count, payload_ptr[count]);
+				}
 
 				//Stop condition for while and for
 				if(*payload_ptr == 0xFFFFFFFF){
