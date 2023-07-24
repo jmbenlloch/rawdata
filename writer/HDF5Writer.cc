@@ -62,6 +62,7 @@ hid_t next::HDF5Writer::CreateRunInfoGroup(hsize_t file, size_t run_number){
 	runinfo_t runinfo;
 	runinfo.run_number = (int) run_number;
 	writeRun(&runinfo, runinfo_table, memtype_run, 0);
+	H5Tclose(memtype_run);
 
 	return eventsTable;
 }
@@ -313,6 +314,7 @@ void next::HDF5Writer::saveTriggerType(hid_t table, int triggerType, int dset_id
 	trigger_t trigger;
 	trigger.trigger_type = (int) triggerType;
 	writeTriggerType(&trigger, table, memtype_trigger, dset_idx);
+	H5Tclose(memtype_trigger);
 }
 
 void next::HDF5Writer::saveTriggerInfo(std::vector<std::pair<std::string, int> > triggerInfo,
@@ -327,6 +329,7 @@ void next::HDF5Writer::saveTriggerInfo(std::vector<std::pair<std::string, int> >
 		triggerData.value = triggerInfo[i].second;
 		writeTriggerConf(&triggerData, trigger_table, memtype_trigger, i);
 	}
+	H5Tclose(memtype_trigger);
 }
 
 void next::HDF5Writer::save_elecids(std::vector<int> * elecids,
@@ -590,4 +593,5 @@ void next::HDF5Writer::WriteRunInfo(size_t file){
 			writeSensor(&sensor, sipmsTable, memtype, i);
 		}
 	}
+	H5Tclose(memtype);
 }
