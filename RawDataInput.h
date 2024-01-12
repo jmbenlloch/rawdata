@@ -167,6 +167,10 @@ private:
   //If true, discard FECs with ErrorBit true
   bool discard_;
 
+  // Read sipms or pmts or both
+  bool read_pmts_;
+  bool read_sipms_;
+
   int externalTriggerCh_;
 
   std::shared_ptr<spdlog::logger> _log;

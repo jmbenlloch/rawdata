@@ -36,6 +36,8 @@ void ReadConfig::parse(){
 	_fileout2   = _obj.get("file_out2", "").asString();
 	_trgCode1   = _obj.get("trg_code1", 1).asInt();
 	_trgCode2   = _obj.get("trg_code2", 9).asInt();
+	_readPmts   = _obj.get("read_pmts", true).asBool();
+	_readSipms  = _obj.get("read_sipms", true).asBool();
 	_splitTrg   = _obj.get("split_trg", false).asBool();
 	_nodb       = _obj.get("no_db", false).asBool();
 	_discard    = _obj.get("discard", true).asBool();
@@ -59,6 +61,8 @@ void ReadConfig::parse(){
 	_log->info("Split trigger: {}", _splitTrg);
 	_log->info("Trigger code 1: {}", _trgCode1);
 	_log->info("Trigger code 2: {}", _trgCode2);
+	_log->info("readPmts: {}", _readPmts);
+	_log->info("readSipms: {}", _readSipms);
 	_log->info("External trigger channel: {}", _extTrigger);
 	_log->info("Keep masked channels: {}", _nodb);
 	_log->info("Discard error events: {}", _discard);

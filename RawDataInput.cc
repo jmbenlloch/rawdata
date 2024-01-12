@@ -34,6 +34,8 @@ next::RawDataInput::RawDataInput(ReadConfig * config, HDF5Writer * writer) :
 	eventReader_(),
 	twoFiles_(config->two_files()),
 	discard_(config->discard()),
+	read_pmts_(config->readPmts()),
+	read_sipms_(config->readSipms()),
 	externalTriggerCh_(config->extTrigger()),
 	fileError_(0)
 {
@@ -451,7 +453,9 @@ bool next::RawDataInput::ReadDATEEvent()
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a PMT FEC");
 				}
-				ReadIndiaJuliettPmt(payload_flip,size);
+				if (read_pmts_){
+					ReadIndiaJuliettPmt(payload_flip,size);
+				}
 				fwVersionPmt = fwVersion;
 			}else if (FECtype==2){
 				if( verbosity_ >= 1 ){
@@ -462,7 +466,9 @@ bool next::RawDataInput::ReadDATEEvent()
 				if( verbosity_ >= 1 ){
 					_log->debug("This is a SIPM FEC");
 				}
-				ReadHotelSipm(payload_flip, size);
+				if (read_sipms_){
+					ReadHotelSipm(payload_flip, size);
+				}
 			}
 		}
 

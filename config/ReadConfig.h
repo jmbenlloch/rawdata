@@ -31,6 +31,8 @@ class ReadConfig {
 		bool splitTrg();
 		int  trgCode1();
 		int  trgCode2();
+		bool readSipms();
+		bool readPmts();
 		std::string host();
 		std::string user();
 		std::string pass();
@@ -59,6 +61,8 @@ class ReadConfig {
 		bool _splitTrg;
 		int _trgCode1;
 		int _trgCode2;
+		bool _readPmts;
+		bool _readSipms;
 		std::string _host;
 		std::string _user;
 		std::string _passwd;
@@ -97,6 +101,10 @@ inline int ReadConfig::trgCode2(){return _trgCode2;}
 inline int ReadConfig::verbosity(){return _verbosity;}
 
 inline int ReadConfig::extTrigger(){return _extTrigger;}
+
+inline bool ReadConfig::readSipms(){return _readSipms;}
+
+inline bool ReadConfig::readPmts(){return _readPmts;}
 
 inline std::string ReadConfig::host(){return _host;}
 
