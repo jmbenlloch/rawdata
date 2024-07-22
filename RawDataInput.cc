@@ -1316,6 +1316,7 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 				payload_ptr++;
 				if(verbosity_ >= 3){
 					_log->debug("Feb ID is 0x{:04x}", FEBId);
+					printf("j=%d, numberOfFEBs %d, previousFT %x, nextFT %x\n", j, numberOfFEB, previousFT, nextFT);
 				}
 
 				int FT = (*payload_ptr) & 0x0FFFF;
@@ -1336,7 +1337,8 @@ void next::RawDataInput::ReadHotelSipm(int16_t * buffer, unsigned int size){
 						}
 						if(nextFT != FT){
 							auto myheader = (*headOut_).rbegin();
-							_logerr->error("SiPM Error! Event {}, FECs ({:x}, {:x}), expected FT was {:x}, current FT is {:x}, time {}", myheader->NbInRun(), channelA, channelB, nextFT, FT, time);
+							//printf("j=%d, numberOfFEBs %d, previousFT %x, nextFT %x\n", j, numberOfFEB, previousFT, nextFT);
+							_logerr->error("SiPM Error! Event {}, FECs ({:x}, {:x}), FEB ID (0x{:x}, {}), expected FT was {:x}, current FT is {:x}, time {}", myheader->NbInRun(), channelA, channelB, FEBId, FEBId, nextFT, FT, time);
 							fileError_ = true;
 							eventError_ = true;
 							if(discard_){
